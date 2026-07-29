@@ -15,7 +15,8 @@ been published from this repository.
 
 Fork-owned metadata is deliberately outside that tree:
 
-- `provenance/AFFINE_BLOCKSUITE.json` records the exact source and mapping;
+- `provenance/AFFINE_BLOCKSUITE.json` records the exact source import;
+- `provenance/PACKAGE_NAME_MAPPING.json` records all 70 distribution names;
 - `LICENSES/` contains the copied AFFiNE notices;
 - root configuration and `scripts/` own the standalone build and tests.
 
@@ -27,10 +28,15 @@ modern line.
 
 Imported source retains its original `@blocksuite/*` names and imports.
 Distribution staging deterministically maps the 70-package CW graph to
-`@cloaked-workspace/*`, for example:
+`@cloaked-workspace/blocksuite-*`, for example:
 
-- `@blocksuite/store` → `@cloaked-workspace/store`;
-- `@blocksuite/affine` → `@cloaked-workspace/affine`.
+- `@blocksuite/store` → `@cloaked-workspace/blocksuite-store`;
+- `@blocksuite/sync` → `@cloaked-workspace/blocksuite-sync`;
+- `@blocksuite/affine` → `@cloaked-workspace/blocksuite-affine`.
+
+The complete mapping is checked into
+[`provenance/PACKAGE_NAME_MAPPING.json`](provenance/PACKAGE_NAME_MAPPING.json)
+and is verified against the discovered dependency graph on every package build.
 
 The first proposed fork version is `0.27.0-cw.1`. Name, internal dependency,
 compiled JavaScript, declaration, export, accessor and Vanilla Extract

@@ -53,7 +53,8 @@ The builder:
 
 1. verifies `HEAD:blocksuite` against the recorded upstream tree SHA;
 2. builds and packs the original `@blocksuite/*` workspaces;
-3. stages the CW dependency closure under `@cloaked-workspace/*`;
+3. verifies the checked-in 70-package mapping and stages the CW dependency
+   closure under `@cloaked-workspace/blocksuite-*`;
 4. assigns prerelease version `0.27.0-cw.1`;
 5. rewrites only staged package metadata, internal compiled imports and
    declaration imports;

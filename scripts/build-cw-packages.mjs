@@ -27,6 +27,7 @@ import { transformSync } from 'esbuild';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const blocksuiteRoot = join(root, 'blocksuite');
+const mappingPath = join(root, 'provenance', 'PACKAGE_NAME_MAPPING.json');
 const yarn = join(root, '.yarn/releases/yarn-4.13.0.cjs');
 const npmCli = resolve(
   dirname(process.execPath),
@@ -83,8 +84,27 @@ while (queue.length) {
 }
 const packageNames = [...graph].sort();
 const distributionNames = new Map(
-  packageNames.map(name => [name, `${distributionScope}${name.slice(sourceScope.length)}`])
+  packageNames.map(name => [
+    name,
+    `${distributionScope}blocksuite-${name.slice(sourceScope.length)}`,
+  ])
 );
+const mappingBytes = readFileSync(mappingPath);
+const recordedMapping = JSON.parse(mappingBytes);
+const expectedMapping = packageNames.map(name => ({
+  source: name,
+  distribution: distributionNames.get(name),
+}));
+if (
+  recordedMapping.schemaVersion !== 1 ||
+  recordedMapping.distributionScope !== distributionScope ||
+  recordedMapping.distributionVersion !== distributionVersion ||
+  JSON.stringify(recordedMapping.packages) !== JSON.stringify(expectedMapping)
+) {
+  throw new Error('Recorded package-name mapping does not match the build graph');
+}
+const packageRootFor = name =>
+  join(scopeStage, distributionNames.get(name).slice(distributionScope.length));
 const internalSpecifierPattern = /@blocksuite\/[a-z0-9-]+/g;
 const rewriteInternalSpecifiers = source =>
   source.replace(internalSpecifierPattern, name => distributionNames.get(name) ?? name);
@@ -135,13 +155,13 @@ for (const name of packageNames) {
   });
   const extractDir = mkdtempSync(join(tmpdir(), 'blocksuite-pack-'));
   run('tar', ['-xzf', raw, '-C', extractDir], { capture: true });
-  renameSync(join(extractDir, 'package'), join(scopeStage, base));
+  renameSync(join(extractDir, 'package'), packageRootFor(name));
   rmSync(extractDir, { recursive: true, force: true });
 }
 
 let accessorFiles = 0;
 for (const name of packageNames) {
-  const packageRoot = join(scopeStage, name.slice(sourceScope.length));
+  const packageRoot = packageRootFor(name);
   for (const path of walk(join(packageRoot, 'dist'), path => path.endsWith('.js'))) {
     const source = readFileSync(path, 'utf8');
     if (!accessorPattern.test(source)) continue;
@@ -198,11 +218,17 @@ const externalSourceScopeDependencies = [
     )
   ),
 ].sort();
+if (
+  JSON.stringify(recordedMapping.externalUnchanged) !==
+  JSON.stringify(externalSourceScopeDependencies)
+) {
+  throw new Error('Recorded external dependency list does not match the build graph');
+}
 let rewrittenExports = 0;
 let rewrittenPackageNames = 0;
 let rewrittenDependencySpecifiers = 0;
 for (const name of packageNames) {
-  const packageRoot = join(scopeStage, name.slice(sourceScope.length));
+  const packageRoot = packageRootFor(name);
   const path = join(packageRoot, 'package.json');
   const manifest = JSON.parse(readFileSync(path, 'utf8'));
   manifest.name = distributionNames.get(name);
@@ -329,8 +355,7 @@ for (const { path } of cssFiles) {
 
 const inventory = [];
 for (const name of packageNames) {
-  const base = name.slice(sourceScope.length);
-  const packageRoot = join(scopeStage, base);
+  const packageRoot = packageRootFor(name);
   const npmOutput = JSON.parse(
     run(
       process.execPath,
@@ -366,7 +391,7 @@ const uncompiledCss = [];
 const remainingWorkspaceSpecifiers = [];
 const remainingInternalSpecifiers = [];
 for (const name of packageNames) {
-  const packageRoot = join(scopeStage, name.slice(sourceScope.length));
+  const packageRoot = packageRootFor(name);
   const manifest = JSON.parse(readFileSync(join(packageRoot, 'package.json')));
   if (manifest.name !== distributionNames.get(name)) {
     throw new Error(`Unexpected staged package name for ${name}: ${manifest.name}`);
@@ -433,6 +458,9 @@ writeFileSync(
       node: process.version,
       yarn: '4.13.0',
       npm: npmVersion,
+      packageNameMappingSha256: createHash('sha256')
+        .update(mappingBytes)
+        .digest('hex'),
       distributionScope,
       distributionVersion,
       externalSourceScopeDependencies,

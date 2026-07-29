@@ -7,7 +7,8 @@ Status: **local package proof passed; publication remains disabled.**
 ## Owner decisions
 
 - Permanent public npm scope: `@cloaked-workspace`.
-- Package suffixes remain recognizable.
+- Every owned distribution package has a `blocksuite-` prefix; for example,
+  `@blocksuite/store` becomes `@cloaked-workspace/blocksuite-store`.
 - Imported AFFiNE source retains original `@blocksuite/*` names and imports.
 - Distribution-only staged outputs are renamed.
 - Initial version: `0.27.0-cw.1`.
@@ -21,6 +22,9 @@ Status: **local package proof passed; publication remains disabled.**
 
 `npm org ls cloaked-workspace --json` completed successfully on 2026-07-29.
 The superseded `cw-blocksuite` check returned `E404 Scope not found`.
+
+The owner confirmed that npm user `releez` owns the organization and has 2FA
+enabled. No package, publishing token or automation account has been created.
 
 This confirms the selected organization exists; it does not authorize a
 publication or prove that every future publisher/trusted workflow has been
@@ -57,7 +61,9 @@ its version rather than resolving an uncontrolled `npm` from `PATH`.
 | Accessor files requiring extra downleveling | 0 |
 
 The compact 70-package inventory SHA-256 was
-`7f6e086aa0e9ae0eb54b8315a531b1b0ee015a4085fce0476316f4287b60a8bf`.
+`3bf14686bb4bcdcbf914a423c17efa452cf8ae6f41e9404d31839f2d2517028e`.
+The checked-in exact name-mapping file SHA-256 was
+`203a1a41ea8b4e05336b7eb8b1b3c66f23a725f3fa8087ac4a33281fdb9b7805`.
 
 Exact bytes are toolchain-specific: a comparison build that had resolved npm
 11 from `PATH` produced different gzip bytes. After archive extraction, all 70
@@ -75,8 +81,8 @@ original scope. It is consumed from upstream and is not renamed or republished.
 - TypeScript build: PASS, 70 projects.
 - Node/happy-dom unit tests: PASS, 49 files / 520 tests.
 - Chromium unit tests: PASS, 14 files / 124 tests.
-- Disposable CW install with 70 local `@cloaked-workspace/*` tarballs and no
-  postinstall: PASS.
+- Disposable CW install with 70 local
+  `@cloaked-workspace/blocksuite-*` tarballs and no postinstall: PASS.
 - Disposable CW tests: PASS, 16/16.
 - Disposable CW Next.js 16.2.12 production build: PASS.
 - Installed internal compiled/declaration references to `@blocksuite/*`: zero.
