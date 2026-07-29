@@ -1,0 +1,116 @@
+# Publication-readiness review
+
+Date: 2026-07-29
+
+Status: **local package proof passed; publication remains disabled.**
+
+## Owner decisions
+
+- Permanent public npm scope: `@cloaked-workspace`.
+- Package suffixes remain recognizable.
+- Imported AFFiNE source retains original `@blocksuite/*` names and imports.
+- Distribution-only staged outputs are renamed.
+- Initial version: `0.27.0-cw.1`.
+- Public npm is the primary future channel.
+- Future publishing must use npm Trusted Publishing/OIDC and provenance.
+- GitHub Release tarballs, checksums, SBOM and attestations are a possible
+  secondary archival channel.
+- No publication or release automation is authorized.
+
+## npm organization verification
+
+`npm org ls cloaked-workspace --json` completed successfully on 2026-07-29.
+The superseded `cw-blocksuite` check returned `E404 Scope not found`.
+
+This confirms the selected organization exists; it does not authorize a
+publication or prove that every future publisher/trusted workflow has been
+configured.
+
+## Review branch structure
+
+1. deletion-only removal of the legacy 0.22 implementation;
+2. exact AFFiNE subtree import;
+3. provenance and licenses outside the imported tree;
+4. standalone Node/Yarn/TypeScript workspace;
+5. staged `@cloaked-workspace/*@0.27.0-cw.1` distribution transform;
+6. documentation, CI test proof and this evidence record.
+
+The exact import commit has `blocksuite` tree SHA
+`d0e6e70bfa88943c79dd5608ff3556e9aafb1783`, matching AFFiNE commit
+`00576e1e7842fb63095cdc5d7a236321957b550c`.
+
+## Package transformation proof
+
+Two independent local builds using Node 22.23.1, vendored Yarn 4.13.0 and the
+Node distribution's npm 10.9.8 produced byte-identical tarball inventories for
+all 70 packages. The builder now invokes that bundled npm directly and records
+its version rather than resolving an uncontrolled `npm` from `PATH`.
+
+| Transformation | Count |
+|---|---:|
+| Package names | 70 |
+| Internal manifest dependency specifiers | 651 |
+| Compiled JavaScript specifiers | 3,716 |
+| Declaration specifiers | 4,426 |
+| Export entries mapped to `dist` | 438 |
+| Vanilla Extract files compiled | 10 |
+| Accessor files requiring extra downleveling | 0 |
+
+The compact 70-package inventory SHA-256 was
+`7f6e086aa0e9ae0eb54b8315a531b1b0ee015a4085fce0476316f4287b60a8bf`.
+
+Exact bytes are toolchain-specific: a comparison build that had resolved npm
+11 from `PATH` produced different gzip bytes. After archive extraction, all 70
+package path lists and concatenated file-byte streams matched the npm 10.9.8
+artifacts. This is equivalent normalized package content, not exact-byte
+reproducibility across npm pack versions. No package in the 70-package graph
+was unreproducible from the tag; `@blocksuite/icons` remains externally sourced.
+
+`@blocksuite/icons@^2.2.17` is the sole external dependency remaining in the
+original scope. It is consumed from upstream and is not renamed or republished.
+
+## Local verification
+
+- Node 22.23.1 / Yarn 4.13.0 immutable install: PASS.
+- TypeScript build: PASS, 70 projects.
+- Node/happy-dom unit tests: PASS, 49 files / 520 tests.
+- Chromium unit tests: PASS, 14 files / 124 tests.
+- Disposable CW install with 70 local `@cloaked-workspace/*` tarballs and no
+  postinstall: PASS.
+- Disposable CW tests: PASS, 16/16.
+- Disposable CW Next.js 16.2.12 production build: PASS.
+- Installed internal compiled/declaration references to `@blocksuite/*`: zero.
+- Source tree after builds: unchanged and exact.
+
+## Tooling audit gate
+
+The original disposable CW lock reported nine high-severity package nodes. All
+derive from the `brace-expansion` denial-of-service advisory through
+`minimatch` and the ESLint/`eslint-config-next` development toolchain. The
+affected nodes are not part of the deployed CW runtime.
+
+Testing ESLint 10 removed three audit nodes but was not a valid remediation:
+the current Next ESLint plugins reject ESLint 10 and six vulnerable plugin
+nodes remain. Forcing `minimatch@10` into those plugins is also incompatible
+with their CommonJS callable API.
+
+Therefore no publication workflow is enabled. Before publication CI is added,
+the owner must choose one reviewed remediation:
+
+1. upgrade to a future compatible `eslint-config-next`/plugin set whose glob
+   graph is fixed; or
+2. replace that downstream lint stack with an equivalent maintained
+   configuration and demonstrate lint parity.
+
+This is a build/tooling availability risk, not evidence of a CW runtime
+vulnerability.
+
+## Remaining release gates
+
+- Review the final diff and commit hashes locally.
+- Approve package compatibility and versioning policy.
+- Configure npm Trusted Publishing independently for all packages, with no
+  long-lived token.
+- Add provenance/SBOM generation and signature verification.
+- Repeat the disposable CW proof from clean, published-shape artifacts.
+- Approve and test an archival immutable GitHub Release process separately.

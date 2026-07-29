@@ -28,6 +28,10 @@ import { transformSync } from 'esbuild';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const blocksuiteRoot = join(root, 'blocksuite');
 const yarn = join(root, '.yarn/releases/yarn-4.13.0.cjs');
+const npmCli = resolve(
+  dirname(process.execPath),
+  '../lib/node_modules/npm/bin/npm-cli.js'
+);
 const stageRoot = join(root, '.standalone-stage');
 const sourceScope = '@blocksuite/';
 const distributionScope = '@cloaked-workspace/';
@@ -43,6 +47,9 @@ if (!isAbsolute(artifactDir) || relative(root, artifactDir).startsWith('..') ===
 }
 if (stageRoot !== join(root, '.standalone-stage')) {
   throw new Error('Refusing unsafe staging path');
+}
+if (!existsSync(npmCli)) {
+  throw new Error(`Unable to locate the npm bundled with ${process.execPath}`);
 }
 
 const walk = (dir, predicate = () => true, output = []) => {
@@ -89,6 +96,9 @@ const run = (command, args, options = {}) =>
     stdio: options.capture ? 'pipe' : 'inherit',
     ...options,
   });
+const npmVersion = run(process.execPath, [npmCli, '--version'], {
+  capture: true,
+}).trim();
 
 console.log(
   `Building ${packageNames.length} CW graph workspaces for ${distributionScope} at ${distributionVersion}`
@@ -323,8 +333,9 @@ for (const name of packageNames) {
   const packageRoot = join(scopeStage, base);
   const npmOutput = JSON.parse(
     run(
-      'npm',
+      process.execPath,
       [
+        npmCli,
         'pack',
         '--ignore-scripts',
         '--json',
@@ -421,6 +432,7 @@ writeFileSync(
       verifiedSourceTreeSha: sourceTreeSha,
       node: process.version,
       yarn: '4.13.0',
+      npm: npmVersion,
       distributionScope,
       distributionVersion,
       externalSourceScopeDependencies,

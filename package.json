@@ -1,5 +1,5 @@
 {
-  "name": "@cloaked-workspace/blocksuite-standalone-spike",
+  "name": "@cloaked-workspace/blocksuite-source",
   "private": true,
   "type": "module",
   "license": "MPL-2.0",

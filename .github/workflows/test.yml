@@ -12,57 +12,38 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  actions: read
   contents: read
 
 jobs:
-  install-deps:
-    name: Install Dependencies
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: ./.github/actions/setup
-
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    needs: install-deps
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: ./.github/actions/setup
-
-      - name: Run format check
-        run: yarn lint:format
-
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    needs: install-deps
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: ./.github/actions/setup
-
-      - name: Check dedupe
-        run: yarn dedupe --check
-
-      - name: Run build
-        run: yarn build
-
   build-and-test:
-    if: ${{ always() }}
-    name: Build & Test
-    needs: [lint, build]
+    name: Build and Node unit tests
     runs-on: ubuntu-latest
     steps:
-      - name: on error
-        if: ${{ needs.lint.result != 'success' || needs.build.result != 'success' }}
-        run: exit 1
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: yarn build
+      - run: yarn test:unit
+      - name: Verify tracked inputs remain immutable
+        run: git diff --exit-code
+
+  browser-unit-tests:
+    name: Chromium unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: yarn exec playwright install --with-deps chromium
+      - run: yarn test:unit:browser
+
+  package-proof:
+    name: Local package proof
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: Build local prerelease artifacts
+        env:
+          BLOCKSUITE_ARTIFACT_DIR: ${{ runner.temp }}/cw-blocksuite-artifacts
+        run: yarn build:packages
+      - name: Verify source and tracked inputs remain unchanged
+        run: git diff --exit-code
