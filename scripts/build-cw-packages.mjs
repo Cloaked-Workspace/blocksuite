@@ -29,10 +29,13 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const blocksuiteRoot = join(root, 'blocksuite');
 const yarn = join(root, '.yarn/releases/yarn-4.13.0.cjs');
 const stageRoot = join(root, '.standalone-stage');
-const scopeStage = join(stageRoot, 'node_modules', '@blocksuite');
+const sourceScope = '@blocksuite/';
+const distributionScope = '@cloaked-workspace/';
+const distributionVersion = '0.27.0-cw.1';
+const scopeStage = join(stageRoot, 'node_modules', '@cloaked-workspace');
 const artifactDir = resolve(
   process.env.BLOCKSUITE_ARTIFACT_DIR ??
-    join(tmpdir(), 'blocksuite-affine-0.27-standalone-artifacts')
+    join(tmpdir(), 'cloaked-workspace-blocksuite-0.27.0-cw.1-artifacts')
 );
 
 if (!isAbsolute(artifactDir) || relative(root, artifactDir).startsWith('..') === false) {
@@ -72,6 +75,12 @@ while (queue.length) {
   }
 }
 const packageNames = [...graph].sort();
+const distributionNames = new Map(
+  packageNames.map(name => [name, `${distributionScope}${name.slice(sourceScope.length)}`])
+);
+const internalSpecifierPattern = /@blocksuite\/[a-z0-9-]+/g;
+const rewriteInternalSpecifiers = source =>
+  source.replace(internalSpecifierPattern, name => distributionNames.get(name) ?? name);
 
 const run = (command, args, options = {}) =>
   execFileSync(command, args, {
@@ -81,13 +90,48 @@ const run = (command, args, options = {}) =>
     ...options,
   });
 
-console.log(`Building ${packageNames.length} CW graph workspaces`);
+console.log(
+  `Building ${packageNames.length} CW graph workspaces for ${distributionScope} at ${distributionVersion}`
+);
 run(process.execPath, [yarn, 'build']);
+const sourceTreeSha = run('git', ['rev-parse', 'HEAD:blocksuite'], {
+  capture: true,
+}).trim();
+const trackedSourceChanges = run(
+  'git',
+  ['status', '--short', '--untracked-files=no', '--', 'blocksuite'],
+  { capture: true }
+).trim();
+if (sourceTreeSha !== 'd0e6e70bfa88943c79dd5608ff3556e9aafb1783') {
+  throw new Error(`Unexpected blocksuite source tree ${sourceTreeSha}`);
+}
+if (trackedSourceChanges) {
+  throw new Error(`Build changed tracked AFFiNE source:\n${trackedSourceChanges}`);
+}
 
 const accessorPattern = /^\s*(?:static\s+)?accessor\s/m;
+
+rmSync(stageRoot, { recursive: true, force: true });
+rmSync(artifactDir, { recursive: true, force: true });
+mkdirSync(scopeStage, { recursive: true });
+mkdirSync(artifactDir, { recursive: true });
+const rawDir = mkdtempSync(join(tmpdir(), 'blocksuite-raw-packs-'));
+
+for (const name of packageNames) {
+  const base = name.slice(sourceScope.length);
+  const raw = join(rawDir, `${base}.tgz`);
+  run(process.execPath, [yarn, 'workspace', name, 'pack', '--out', raw], {
+    capture: true,
+  });
+  const extractDir = mkdtempSync(join(tmpdir(), 'blocksuite-pack-'));
+  run('tar', ['-xzf', raw, '-C', extractDir], { capture: true });
+  renameSync(join(extractDir, 'package'), join(scopeStage, base));
+  rmSync(extractDir, { recursive: true, force: true });
+}
+
 let accessorFiles = 0;
 for (const name of packageNames) {
-  const packageRoot = dirname(manifests.get(name).path);
+  const packageRoot = join(scopeStage, name.slice(sourceScope.length));
   for (const path of walk(join(packageRoot, 'dist'), path => path.endsWith('.js'))) {
     const source = readFileSync(path, 'utf8');
     if (!accessorPattern.test(source)) continue;
@@ -100,24 +144,6 @@ for (const name of packageNames) {
     writeFileSync(path, code);
     accessorFiles += 1;
   }
-}
-
-rmSync(stageRoot, { recursive: true, force: true });
-rmSync(artifactDir, { recursive: true, force: true });
-mkdirSync(scopeStage, { recursive: true });
-mkdirSync(artifactDir, { recursive: true });
-const rawDir = mkdtempSync(join(tmpdir(), 'blocksuite-raw-packs-'));
-
-for (const name of packageNames) {
-  const base = name.slice('@blocksuite/'.length);
-  const raw = join(rawDir, `${base}.tgz`);
-  run(process.execPath, [yarn, 'workspace', name, 'pack', '--out', raw], {
-    capture: true,
-  });
-  const extractDir = mkdtempSync(join(tmpdir(), 'blocksuite-pack-'));
-  run('tar', ['-xzf', raw, '-C', extractDir], { capture: true });
-  renameSync(join(extractDir, 'package'), join(scopeStage, base));
-  rmSync(extractDir, { recursive: true, force: true });
 }
 
 const mapSourceExport = value => {
@@ -144,11 +170,45 @@ const rewriteExportValue = value => {
   );
 };
 
+const dependencyFields = [
+  'dependencies',
+  'devDependencies',
+  'optionalDependencies',
+  'peerDependencies',
+];
+const externalSourceScopeDependencies = [
+  ...new Set(
+    packageNames.flatMap(name =>
+      dependencyFields.flatMap(field =>
+        Object.keys(manifests.get(name).manifest[field] ?? {}).filter(
+          dependency =>
+            dependency.startsWith(sourceScope) && !distributionNames.has(dependency)
+        )
+      )
+    )
+  ),
+].sort();
 let rewrittenExports = 0;
+let rewrittenPackageNames = 0;
+let rewrittenDependencySpecifiers = 0;
 for (const name of packageNames) {
-  const packageRoot = join(scopeStage, name.slice('@blocksuite/'.length));
+  const packageRoot = join(scopeStage, name.slice(sourceScope.length));
   const path = join(packageRoot, 'package.json');
   const manifest = JSON.parse(readFileSync(path, 'utf8'));
+  manifest.name = distributionNames.get(name);
+  manifest.version = distributionVersion;
+  rewrittenPackageNames += 1;
+  for (const field of dependencyFields) {
+    if (!manifest[field]) continue;
+    manifest[field] = Object.fromEntries(
+      Object.entries(manifest[field]).map(([dependency, specifier]) => {
+        const distributionName = distributionNames.get(dependency);
+        if (!distributionName) return [dependency, specifier];
+        rewrittenDependencySpecifiers += 1;
+        return [distributionName, distributionVersion];
+      })
+    );
+  }
   if (manifest.exports) {
     manifest.exports = Object.fromEntries(
       Object.entries(manifest.exports).map(([key, value]) => {
@@ -159,6 +219,24 @@ for (const name of packageNames) {
     );
   }
   writeFileSync(path, `${JSON.stringify(manifest, null, 2)}\n`);
+}
+
+let rewrittenCompiledSpecifiers = 0;
+let rewrittenDeclarationSpecifiers = 0;
+const isDeclaration = path => /\.d\.(?:ts|mts|cts)$/.test(path);
+const isCompiledJavaScript = path => /\.(?:js|mjs|cjs)$/.test(path);
+for (const path of walk(
+  scopeStage,
+  path => isDeclaration(path) || isCompiledJavaScript(path)
+)) {
+  const source = readFileSync(path, 'utf8');
+  const rewritten = rewriteInternalSpecifiers(source);
+  if (rewritten === source) continue;
+  const matches = source.match(internalSpecifierPattern) ?? [];
+  const count = matches.filter(name => distributionNames.has(name)).length;
+  if (isDeclaration(path)) rewrittenDeclarationSpecifiers += count;
+  else rewrittenCompiledSpecifiers += count;
+  writeFileSync(path, rewritten);
 }
 
 const marker = '// @blocksuite-standalone-precompiled-vanilla-extract';
@@ -202,7 +280,7 @@ const cssFiles = walk(scopeStage, path => path.endsWith('.css.js'))
 for (const { path } of cssFiles) {
   const distAt = path.indexOf('/dist/');
   const packageRoot = path.slice(0, distAt);
-  const packageName = `@blocksuite/${relative(scopeStage, packageRoot)}`;
+  const packageName = `${distributionScope}${relative(scopeStage, packageRoot)}`;
   const scopePath = relative(packageRoot, path).replace(/\.js$/, '.ts');
   const output = run(
     process.execPath,
@@ -241,7 +319,7 @@ for (const { path } of cssFiles) {
 
 const inventory = [];
 for (const name of packageNames) {
-  const base = name.slice('@blocksuite/'.length);
+  const base = name.slice(sourceScope.length);
   const packageRoot = join(scopeStage, base);
   const npmOutput = JSON.parse(
     run(
@@ -261,7 +339,8 @@ for (const name of packageNames) {
   const artifact = join(artifactDir, filename);
   const bytes = readFileSync(artifact);
   inventory.push({
-    name,
+    sourceName: name,
+    name: distributionNames.get(name),
     version: JSON.parse(readFileSync(join(packageRoot, 'package.json'))).version,
     filename,
     bytes: statSync(artifact).size,
@@ -273,21 +352,63 @@ for (const name of packageNames) {
 const remainingSourceExports = [];
 const remainingAccessors = [];
 const uncompiledCss = [];
+const remainingWorkspaceSpecifiers = [];
+const remainingInternalSpecifiers = [];
 for (const name of packageNames) {
-  const packageRoot = join(scopeStage, name.slice('@blocksuite/'.length));
+  const packageRoot = join(scopeStage, name.slice(sourceScope.length));
   const manifest = JSON.parse(readFileSync(join(packageRoot, 'package.json')));
+  if (manifest.name !== distributionNames.get(name)) {
+    throw new Error(`Unexpected staged package name for ${name}: ${manifest.name}`);
+  }
+  if (manifest.version !== distributionVersion) {
+    throw new Error(`Unexpected staged version for ${name}: ${manifest.version}`);
+  }
   if (JSON.stringify(manifest.exports ?? {}).includes('./src/')) {
     remainingSourceExports.push(name);
+  }
+  for (const field of dependencyFields) {
+    for (const [dependency, specifier] of Object.entries(manifest[field] ?? {})) {
+      if (distributionNames.has(dependency)) remainingInternalSpecifiers.push(dependency);
+      if (typeof specifier === 'string' && specifier.startsWith('workspace:')) {
+        remainingWorkspaceSpecifiers.push(`${manifest.name}:${field}:${dependency}`);
+      }
+    }
   }
   for (const path of walk(join(packageRoot, 'dist'), path => path.endsWith('.js'))) {
     const source = readFileSync(path, 'utf8');
     if (accessorPattern.test(source)) remainingAccessors.push(path);
     if (path.endsWith('.css.js') && !source.startsWith(marker)) uncompiledCss.push(path);
   }
+  for (const path of walk(
+    join(packageRoot, 'dist'),
+    path => isDeclaration(path) || isCompiledJavaScript(path)
+  )) {
+    const source = readFileSync(path, 'utf8');
+    const matches = source.match(internalSpecifierPattern) ?? [];
+    if (matches.some(specifier => distributionNames.has(specifier))) {
+      remainingInternalSpecifiers.push(path);
+    }
+  }
 }
-if (remainingSourceExports.length || remainingAccessors.length || uncompiledCss.length) {
+if (
+  remainingSourceExports.length ||
+  remainingAccessors.length ||
+  uncompiledCss.length ||
+  remainingWorkspaceSpecifiers.length ||
+  remainingInternalSpecifiers.length
+) {
   throw new Error(
-    JSON.stringify({ remainingSourceExports, remainingAccessors, uncompiledCss }, null, 2)
+    JSON.stringify(
+      {
+        remainingSourceExports,
+        remainingAccessors,
+        uncompiledCss,
+        remainingWorkspaceSpecifiers,
+        remainingInternalSpecifiers,
+      },
+      null,
+      2
+    )
   );
 }
 
@@ -297,9 +418,17 @@ writeFileSync(
     {
       sourceCommit: '00576e1e7842fb63095cdc5d7a236321957b550c',
       subtreeSha: 'd0e6e70bfa88943c79dd5608ff3556e9aafb1783',
+      verifiedSourceTreeSha: sourceTreeSha,
       node: process.version,
       yarn: '4.13.0',
+      distributionScope,
+      distributionVersion,
+      externalSourceScopeDependencies,
       packageCount: inventory.length,
+      rewrittenPackageNames,
+      rewrittenDependencySpecifiers,
+      rewrittenCompiledSpecifiers,
+      rewrittenDeclarationSpecifiers,
       rewrittenExports,
       accessorFilesDownleveled: accessorFiles,
       vanillaExtractFilesPrecompiled: cssFiles.length,
