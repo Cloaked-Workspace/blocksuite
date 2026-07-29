@@ -1,4 +1,32 @@
-# BlockSuite
+# BlockSuite maintenance fork
+
+> [!IMPORTANT]
+> This repository is a public preservation and maintenance fork of
+> [toeverything/blocksuite](https://github.com/toeverything/blocksuite).
+>
+> Its purpose is to keep the editor framework buildable, documented,
+> secure, and available to Cloaked Workspace and other self-hosted
+> projects.
+>
+> The inherited source code remains licensed under MPL 2.0. This project
+> is not affiliated with or endorsed by ToEverything.
+
+## Fork status
+
+The initial scope is deliberately limited:
+
+- preserve the upstream source and history;
+- maintain compatibility required by external consumers;
+- document reproducible builds and releases;
+- review security and dependency updates;
+- evaluate sustainable community governance.
+
+Cloaked Workspace currently uses BlockSuite 0.22.4. No independent
+packages or compatibility guarantees have been announced by this fork yet.
+
+---
+
+## Original BlockSuite documentation
 
 <p align="center">
   <picture style="width: 500px">
