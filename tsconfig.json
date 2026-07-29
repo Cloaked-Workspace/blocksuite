@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    // Strictness
     "strict": true,
     "verbatimModuleSyntax": true,
     "exactOptionalPropertyTypes": false,
@@ -12,35 +11,21 @@
     "noPropertyAccessFromIndexSignature": false,
     "noUncheckedIndexedAccess": false,
     "skipLibCheck": true,
-
-    // Modules
     "module": "ESNext",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
-
-    // Emit
-    "lib": ["esnext", "dom", "dom.iterable"],
-    "target": "esnext",
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "target": "ES2022",
     "useDefineForClassFields": false,
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "importsNotUsedAsValues": "remove",
-
-    // Interop Constraints
     "forceConsistentCasingInFileNames": true,
     "allowSyntheticDefaultImports": true,
     "isolatedModules": true,
-
-    // Composite
     "composite": true
   },
   "include": [],
   "files": [],
-  "exclude": ["node_modules", "target", "dist", "lib"],
-  "references": [
-    { "path": "./packages/affine/all" },
-    { "path": "./packages/integration-test" },
-    { "path": "./packages/playground" }
-  ]
+  "exclude": ["node_modules", "dist", "build", "temp"]
 }

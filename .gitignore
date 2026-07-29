@@ -31,6 +31,7 @@ next-env.d.ts
 .eslintcache
 
 __screenshots__/
+.standalone-stage/
 
 
 .pnp.*
