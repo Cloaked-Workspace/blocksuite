@@ -90,8 +90,13 @@ scheduling. Every compiled `.js`, `.d.ts` and `.map` was already deterministic.
 That file is build state and is now removed before packing. It should never have
 been published: dropping it took the 70 tarballs from 9.39 MB to 5.15 MB.
 
-With it gone, two forced rebuilds produced an identical content digest, one on
-Node 22.23.1 with npm 10.9.8 and one on Node 24.15.0 with npm 11.12.1.
+With it gone, the content digest `653412d2e20ccaf62ec4e262808e2924e6596da12c0dbf08d6a07c97459d8e79`
+was reproduced by three independent builds: macOS on Node 22.23.1 with npm
+10.9.8, macOS on Node 24.15.0 with npm 11.12.1, and the Linux CI runner.
+
+That is the first cross-platform reproducibility evidence this record carries.
+The two builds it previously described were both on one machine, which is why
+they agreed on output that later proved not to be deterministic.
 
 An earlier claim in this record, that a comparison build resolving npm 11 from
 `PATH` produced different gzip bytes, does not reproduce against npm 11.12.1.
