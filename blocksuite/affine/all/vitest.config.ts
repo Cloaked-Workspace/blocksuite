@@ -29,7 +29,11 @@ export default defineConfig({
         log.includes('lit.dev/msg/dev-mode') ||
         log.includes(
           `KaTeX doesn't work in quirks mode. Make sure your website has a suitable doctype.`
-        )
+        ) ||
+        log.includes(
+          '[MSW] Found a redundant usage of query parameters in the request handler URL'
+        ) ||
+        log.includes('Blob nonexistent-blob-id not found in blob manager')
       ) {
         return false;
       }
