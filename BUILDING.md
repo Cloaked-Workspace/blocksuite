@@ -51,7 +51,7 @@ BLOCKSUITE_ARTIFACT_DIR=/private/tmp/cw-blocksuite-artifacts \
 
 The builder:
 
-1. verifies `HEAD:blocksuite` against the recorded upstream tree SHA;
+1. verifies `HEAD:blocksuite` against the recorded patched tree SHA;
 2. builds and packs the original `@blocksuite/*` workspaces;
 3. verifies the checked-in 70-package mapping and stages the CW dependency
    closure under `@cloaked-workspace/blocksuite-*`;
@@ -69,6 +69,37 @@ than an arbitrary `npm` from `PATH`. The recorded npm version is therefore
 part of the exact-byte artifact provenance.
 
 No package script is executed by `npm pack`, and this command does not publish.
+
+### Comparing two builds
+
+`inventory.json` records two kinds of hash per package, and they answer
+different questions.
+
+`archiveSha256` is SHA-256 over the `.tgz` bytes npm produced. It is only
+meaningful for a given archiver.
+
+`contentSha256` is SHA-256 over what the package publishes, with npm taking no
+part in producing the bytes. For each file in the set `npm pack --json` reports,
+sorted by path, the digest is fed:
+
+```
+path, NUL byte, file bytes read from the staged tree, NUL byte
+```
+
+`inventoryContentSha256` aggregates those. Take one line per package,
+
+```
+<distribution name>@<version> <contentSha256>
+```
+
+sort the lines, join with `\n`, append a trailing `\n`, and take SHA-256 of the
+result. The builder prints this value when it finishes.
+
+Use `inventoryContentSha256` to decide whether two independent builds staged the
+same content. It is invariant across archivers by construction, and changes if
+any published byte changes or if npm's inclusion rules change. It is a
+pre-publication check only, and is not a substitute for npm provenance
+attestations once publishing is configured.
 
 ## Publication safety
 

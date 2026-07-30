@@ -359,6 +359,35 @@ for (const { path } of cssFiles) {
   writeFileSync(path, `${lines.join('\n')}\n`);
 }
 
+/**
+ * Digest of what a package publishes, independent of the archiver.
+ *
+ * The archive hash covers the gzip bytes npm produced, which are only guaranteed
+ * for one archiver. This digest takes the file set npm decided to publish and
+ * reads the bytes from the staged tree instead, so npm plays no part in
+ * producing the values it covers. It is invariant across archivers by
+ * construction, while still changing if npm's inclusion rules change or if any
+ * published byte changes.
+ *
+ * Measured on npm 10.9.8 and 11.12.1, both this digest and the archive hashes
+ * came out identical for all 70 packages, so today the archive hash happens to
+ * be stable too. This digest does not depend on that continuing to hold.
+ *
+ * Formula, documented in BUILDING.md: for each published file, sorted by path,
+ * feed `path`, NUL, file bytes, NUL into one SHA-256.
+ */
+function packageContentDigest(packageRoot, files) {
+  const digest = createHash('sha256');
+  const sorted = [...files].sort((a, b) => (a.path < b.path ? -1 : 1));
+  for (const { path: relativePath } of sorted) {
+    digest.update(relativePath);
+    digest.update('\0');
+    digest.update(readFileSync(join(packageRoot, relativePath)));
+    digest.update('\0');
+  }
+  return digest.digest('hex');
+}
+
 const inventory = [];
 for (const name of packageNames) {
   const packageRoot = packageRootFor(name);
@@ -386,10 +415,22 @@ for (const name of packageNames) {
     version: JSON.parse(readFileSync(join(packageRoot, 'package.json'))).version,
     filename,
     bytes: statSync(artifact).size,
-    sha256: createHash('sha256').update(bytes).digest('hex'),
+    archiveSha256: createHash('sha256').update(bytes).digest('hex'),
+    contentSha256: packageContentDigest(packageRoot, npmOutput[0].files),
     files: npmOutput[0].files.length,
   });
 }
+
+// Equivalence across two independent builds is checked on this value, not on the
+// archive hashes. It is not a substitute for npm provenance once publication is
+// configured; it only proves two pre-publication builds staged the same content.
+const inventoryContentLines = inventory
+  .map(entry => `${entry.name}@${entry.version} ${entry.contentSha256}`)
+  .sort()
+  .join('\n');
+const inventoryContentSha256 = createHash('sha256')
+  .update(`${inventoryContentLines}\n`)
+  .digest('hex');
 
 const remainingSourceExports = [];
 const remainingAccessors = [];
@@ -471,6 +512,7 @@ writeFileSync(
       distributionScope,
       distributionVersion,
       externalSourceScopeDependencies,
+      inventoryContentSha256,
       packageCount: inventory.length,
       rewrittenPackageNames,
       rewrittenDependencySpecifiers,
@@ -492,4 +534,5 @@ console.log(
   `Built ${inventory.length} local tarballs; rewrote ${rewrittenExports} exports, ` +
     `downleveled ${accessorFiles} accessor files, and precompiled ${cssFiles.length} Vanilla Extract files.`
 );
+console.log(`Inventory content SHA-256: ${inventoryContentSha256}`);
 console.log(`Artifacts: ${artifactDir}`);

@@ -74,12 +74,25 @@ its version rather than resolving an uncontrolled `npm` from `PATH`.
 The checked-in exact name-mapping file SHA-256 was
 `203a1a41ea8b4e05336b7eb8b1b3c66f23a725f3fa8087ac4a33281fdb9b7805`.
 
-Exact bytes are toolchain-specific: a comparison build that had resolved npm
-11 from `PATH` produced different gzip bytes. After archive extraction, all 70
-package path lists and concatenated file-byte streams matched the npm 10.9.8
-artifacts. This is equivalent normalized package content, not exact-byte
-reproducibility across npm pack versions. No package in the 70-package graph
-was unreproducible from the tag; `@blocksuite/icons` remains externally sourced.
+The aggregate published-content digest was
+`6b2e5dba1884b280a813f04b57da262a06aba216b8cbf7cd57648924dc95b056`. Unlike the
+value removed from an earlier revision of this record, it is defined and
+reproducible: `BUILDING.md` states the formula and the builder prints it.
+
+Two builds were compared across archivers, one on Node 22.23.1 with npm 10.9.8
+and one on Node 24.15.0 with npm 11.12.1. The content digest matched, and so did
+every `archiveSha256` and tarball size for all 70 packages.
+
+That last part contradicts an earlier claim in this record, which said a
+comparison build resolving npm 11 from `PATH` produced different gzip bytes.
+That does not reproduce against npm 11.12.1. The original observation may have
+involved a different npm build or environment; it is unverified as written and
+should not be relied on. What is established is that the content digest does not
+depend on the archiver by construction, because npm plays no part in producing
+the bytes it covers.
+
+No package in the 70-package graph was unreproducible from the tag;
+`@blocksuite/icons` remains externally sourced.
 
 `@blocksuite/icons@^2.2.17` is the sole external dependency remaining in the
 original scope. It is consumed from upstream and is not renamed or republished.
