@@ -46,12 +46,12 @@ The exact import commit has `blocksuite` tree SHA
 
 The imported tree is no longer what gets built. Seven files carry fork patches,
 recorded in `provenance/FORK_PATCHES.md`, producing built tree
-`3fe97e771913e2eea910f0c3d4e4e5dfae676e47`. Three bound the polynomial regular
+`0994a6d42d505b516cc4183be69f2084e5fdc839`. Three bound the polynomial regular
 expressions CodeQL reported; four align the console whitelists that made the
 imported vitest configurations fail on CI.
 
 Mechanical review is therefore two steps rather than one: verify `d0e6e70b…`
-against upstream, then review those two commits. `scripts/build-cw-packages.mjs`
+against upstream, then review those three commits. `scripts/build-cw-packages.mjs`
 refuses to build any other tree, and `inventory.json` records both SHAs.
 
 ## Package transformation proof
