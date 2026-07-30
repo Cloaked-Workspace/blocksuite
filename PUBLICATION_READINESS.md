@@ -60,8 +60,6 @@ its version rather than resolving an uncontrolled `npm` from `PATH`.
 | Vanilla Extract files compiled | 10 |
 | Accessor files requiring extra downleveling | 0 |
 
-The compact 70-package inventory SHA-256 was
-`3bf14686bb4bcdcbf914a423c17efa452cf8ae6f41e9404d31839f2d2517028e`.
 The checked-in exact name-mapping file SHA-256 was
 `203a1a41ea8b4e05336b7eb8b1b3c66f23a725f3fa8087ac4a33281fdb9b7805`.
 
