@@ -35,6 +35,12 @@ const npmCli = resolve(
 );
 const stageRoot = join(root, '.standalone-stage');
 const sourceScope = '@blocksuite/';
+// Tree of the exact AFFiNE import, and the tree actually built: the import plus
+// the fork patches recorded in provenance/FORK_PATCHES.md. Keeping both means a
+// reviewer can still verify the import mechanically and see exactly what the
+// fork changed on top of it.
+const upstreamSubtreeSha = 'd0e6e70bfa88943c79dd5608ff3556e9aafb1783';
+const patchedSubtreeSha = '3fe97e771913e2eea910f0c3d4e4e5dfae676e47';
 const distributionScope = '@cloaked-workspace/';
 const distributionVersion = '0.27.0-cw.1';
 const scopeStage = join(stageRoot, 'node_modules', '@cloaked-workspace');
@@ -132,7 +138,7 @@ const trackedSourceChanges = run(
   ['status', '--short', '--untracked-files=no', '--', 'blocksuite'],
   { capture: true }
 ).trim();
-if (sourceTreeSha !== 'd0e6e70bfa88943c79dd5608ff3556e9aafb1783') {
+if (sourceTreeSha !== patchedSubtreeSha) {
   throw new Error(`Unexpected blocksuite source tree ${sourceTreeSha}`);
 }
 if (trackedSourceChanges) {
@@ -453,7 +459,8 @@ writeFileSync(
   `${JSON.stringify(
     {
       sourceCommit: '00576e1e7842fb63095cdc5d7a236321957b550c',
-      subtreeSha: 'd0e6e70bfa88943c79dd5608ff3556e9aafb1783',
+      upstreamSubtreeSha,
+      patchedSubtreeSha,
       verifiedSourceTreeSha: sourceTreeSha,
       node: process.version,
       yarn: '4.13.0',

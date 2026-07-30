@@ -37,11 +37,22 @@ configured.
 3. provenance and licenses outside the imported tree;
 4. standalone Node/Yarn/TypeScript workspace;
 5. staged `@cloaked-workspace/*@0.27.0-cw.1` distribution transform;
-6. documentation, CI test proof and this evidence record.
+6. documentation, CI test proof and this evidence record;
+7. fork patches applied on top of the imported tree.
 
 The exact import commit has `blocksuite` tree SHA
 `d0e6e70bfa88943c79dd5608ff3556e9aafb1783`, matching AFFiNE commit
 `00576e1e7842fb63095cdc5d7a236321957b550c`.
+
+The imported tree is no longer what gets built. Seven files carry fork patches,
+recorded in `provenance/FORK_PATCHES.md`, producing built tree
+`3fe97e771913e2eea910f0c3d4e4e5dfae676e47`. Three bound the polynomial regular
+expressions CodeQL reported; four align the console whitelists that made the
+imported vitest configurations fail on CI.
+
+Mechanical review is therefore two steps rather than one: verify `d0e6e70b…`
+against upstream, then review those two commits. `scripts/build-cw-packages.mjs`
+refuses to build any other tree, and `inventory.json` records both SHAs.
 
 ## Package transformation proof
 

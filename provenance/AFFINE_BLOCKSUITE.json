@@ -9,6 +9,15 @@
   ],
   "subtreePath": "blocksuite",
   "subtreeSha": "d0e6e70bfa88943c79dd5608ff3556e9aafb1783",
+  "forkPatches": {
+    "record": "provenance/FORK_PATCHES.md",
+    "patchedSubtreeSha": "3fe97e771913e2eea910f0c3d4e4e5dfae676e47",
+    "fileCount": 7,
+    "commits": [
+      "cf644440ab60b6d3f674ed57cfa88014f6b35429",
+      "1ac84f9b0d2480c017d13977800606d4f3b0467f"
+    ]
+  },
   "latestCommitAffectingSubtree": {
     "commit": "b6fc0a2192cab6e4f9f8c2ba2d0f538c575e6b52",
     "committedAt": "2026-07-28T13:02:38+08:00",
@@ -34,6 +43,7 @@
     "Extract AFFiNE tree 00576e1e7842fb63095cdc5d7a236321957b550c:blocksuite unchanged at blocksuite/",
     "Copy upstream root LICENSE to LICENSES/AFFINE-LICENSE outside the imported subtree",
     "Copy upstream root LICENSE-MIT to LICENSES/AFFINE-LICENSE-MIT outside the imported subtree",
-    "Add this provenance record at provenance/AFFINE_BLOCKSUITE.json outside the imported subtree"
+    "Add this provenance record at provenance/AFFINE_BLOCKSUITE.json outside the imported subtree",
+    "Apply the fork patches recorded in provenance/FORK_PATCHES.md, producing subtree 3fe97e771913e2eea910f0c3d4e4e5dfae676e47"
   ]
 }
