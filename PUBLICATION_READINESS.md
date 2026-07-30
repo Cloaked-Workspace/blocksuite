@@ -114,12 +114,31 @@ original scope. It is consumed from upstream and is not renamed or republished.
 - TypeScript build: PASS, 70 projects.
 - Node/happy-dom unit tests: PASS, 49 files / 520 tests.
 - Chromium unit tests: PASS, 14 files / 124 tests.
-- Disposable CW install with 70 local
-  `@cloaked-workspace/blocksuite-*` tarballs and no postinstall: PASS.
+- Disposable consumer proof, `yarn verify:consumer`: PASS. All 70 tarballs
+  install with scripts disabled, every entry point and declared `types` path
+  resolves, and esbuild links the editor into a 1.77 MB bundle.
+- Installed internal compiled/declaration references to `@blocksuite/*`: zero,
+  apart from the external `@blocksuite/icons`.
+- Source tree after builds: unchanged and exact.
+
+The consumer proof is now a script in this repository and a step in CI. It
+previously existed only as the three claims below, recorded from a manual run
+that nothing could repeat:
+
 - Disposable CW tests: PASS, 16/16.
 - Disposable CW Next.js 16.2.12 production build: PASS.
-- Installed internal compiled/declaration references to `@blocksuite/*`: zero.
-- Source tree after builds: unchanged and exact.
+
+Those two are retained as history rather than evidence. Neither is reproducible
+from this repository, and the CW project they ran against is not part of it.
+Automating an equivalent against the real consumer is the remaining work.
+
+Writing the script immediately surfaced two things the manual claims had not.
+`@blocksuite/global` shipped a `types` field pointing at a file that does not
+exist in the package, invisible under `node16` and `bundler` resolution and
+broken under classic `node`; the builder now drops such fields. And the
+distribution is bundler-only: compiled output uses extensionless and
+directory-relative specifiers, so 6 of 70 packages load under Node's ESM
+resolver. Every bundler resolves them, which is why no earlier check noticed.
 
 ## Tooling audit gate
 

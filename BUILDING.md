@@ -72,6 +72,28 @@ part of the exact-byte artifact provenance.
 
 No package script is executed by `npm pack`, and this command does not publish.
 
+### Consumer proof
+
+```sh
+BLOCKSUITE_ARTIFACT_DIR=/private/tmp/cw-blocksuite-artifacts \
+  yarn verify:consumer
+```
+
+Installs the tarballs into a disposable project outside the repository with
+scripts disabled, and asserts that all 70 packages install, that no unrewritten
+`@blocksuite/*` specifier survives apart from the external `@blocksuite/icons`,
+that every entry point and declared `types` path resolves, and that esbuild links
+the editor into a bundle above a size floor.
+
+The floor matters: every package declares `sideEffects: false`, so a bare
+`import 'pkg'` is tree-shaken to nothing and an empty bundle would otherwise
+look like a pass. The probe re-exports each package as a namespace instead.
+
+The distribution targets bundlers. Compiled output uses extensionless and
+directory-relative specifiers, which every bundler resolves and Node's ESM
+resolver rejects, so only a handful of packages load in plain Node. The script
+reports that count without failing on it.
+
 ### Comparing two builds
 
 `inventory.json` records two kinds of hash per package, and they answer

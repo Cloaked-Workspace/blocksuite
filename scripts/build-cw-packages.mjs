@@ -231,6 +231,7 @@ if (
   throw new Error('Recorded external dependency list does not match the build graph');
 }
 let rewrittenExports = 0;
+let droppedStaleTypes = 0;
 let rewrittenPackageNames = 0;
 let rewrittenDependencySpecifiers = 0;
 for (const name of packageNames) {
@@ -259,6 +260,15 @@ for (const name of packageNames) {
         return [key, rewritten];
       })
     );
+  }
+  // A top-level `types` survives from upstream pointing at a path that only made
+  // sense before the export entries were moved under `dist`. `node16` and
+  // `bundler` resolution read it from the export entry instead, so the stale
+  // field is invisible until a consumer uses classic `node` resolution and finds
+  // nothing. The export map carries the declarations, so drop it.
+  if (manifest.types && !existsSync(join(packageRoot, manifest.types))) {
+    delete manifest.types;
+    droppedStaleTypes += 1;
   }
   writeFileSync(path, `${JSON.stringify(manifest, null, 2)}\n`);
 }
@@ -534,6 +544,7 @@ writeFileSync(
       rewrittenCompiledSpecifiers,
       rewrittenDeclarationSpecifiers,
       rewrittenExports,
+      droppedStaleTypes,
       accessorFilesDownleveled: accessorFiles,
       vanillaExtractFilesPrecompiled: cssFiles.length,
       packages: inventory,

@@ -54,5 +54,9 @@ jobs:
         env:
           BLOCKSUITE_ARTIFACT_DIR: ${{ runner.temp }}/cw-blocksuite-artifacts
         run: yarn build:packages
+      - name: Verify a disposable consumer can install and link the artifacts
+        env:
+          BLOCKSUITE_ARTIFACT_DIR: ${{ runner.temp }}/cw-blocksuite-artifacts
+        run: yarn verify:consumer
       - name: Verify source and tracked inputs remain unchanged
         run: git diff --exit-code
