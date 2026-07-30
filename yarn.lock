@@ -2170,6 +2170,7 @@ __metadata:
     esbuild: "npm:^0.27.0"
     happy-dom: "npm:^20.0.0"
     playwright: "npm:1.58.2"
+    react: "npm:^19.0.0"
     typescript: "npm:5.9.3"
     vite: "npm:^7.3.5"
     vitest: "npm:^4.1.10"
@@ -8150,6 +8151,13 @@ __metadata:
   version: 4.0.3
   resolution: "raf-schd@npm:4.0.3"
   checksum: 10/45514041c5ad31fa96aef3bb3c572a843b92da2f2cd1cb4a47c9ad58e48761d3a4126e18daa32b2bfa0bc2551a42d8f324a0e40e536cb656969929602b4e8b58
+  languageName: node
+  linkType: hard
+
+"react@npm:^19.0.0":
+  version: 19.2.8
+  resolution: "react@npm:19.2.8"
+  checksum: 10/a3c697798035e295ca9e51591d3a8700824535cb8c070fac1f8abbe69717ceb99108cbc4ba7b31a606806f336b1eba705705f63b9d39ace198fe51e8990ac843
   languageName: node
   linkType: hard
 
