@@ -76,7 +76,7 @@ The checked-in exact name-mapping file SHA-256 was
 `203a1a41ea8b4e05336b7eb8b1b3c66f23a725f3fa8087ac4a33281fdb9b7805`.
 
 The aggregate published-content digest was
-`653412d2e20ccaf62ec4e262808e2924e6596da12c0dbf08d6a07c97459d8e79`. Unlike the
+`5fe8631af57034b082d9818dde8e11b2654a8d0771aa6727c66af8021d91f473`. Unlike the
 value removed from an earlier revision of this record, it is defined and
 reproducible: `BUILDING.md` states the formula and the builder prints it.
 
@@ -90,13 +90,17 @@ scheduling. Every compiled `.js`, `.d.ts` and `.map` was already deterministic.
 That file is build state and is now removed before packing. It should never have
 been published: dropping it took the 70 tarballs from 9.39 MB to 5.15 MB.
 
-With it gone, the content digest `653412d2e20ccaf62ec4e262808e2924e6596da12c0dbf08d6a07c97459d8e79`
-was reproduced by three independent builds: macOS on Node 22.23.1 with npm
-10.9.8, macOS on Node 24.15.0 with npm 11.12.1, and the Linux CI runner.
+With it gone, the digest was reproduced by three independent builds: macOS on
+Node 22.23.1 with npm 10.9.8, macOS on Node 24.15.0 with npm 11.12.1, and the
+Linux CI runner. That is the first cross-platform reproducibility evidence this
+record carries. The two builds it previously described were both on one machine,
+which is why they agreed on output that later proved not to be deterministic.
 
-That is the first cross-platform reproducibility evidence this record carries.
-The two builds it previously described were both on one machine, which is why
-they agreed on output that later proved not to be deterministic.
+Those three builds agreed on `653412d2e20ccaf62ec4e262808e2924e6596da12c0dbf08d6a07c97459d8e79`.
+The value changed to the one above when the builder began dropping a `types`
+field pointing at a missing file, which altered one manifest. The cross-platform
+claim therefore belongs to the earlier value; the current one has so far been
+reproduced by two forced local rebuilds, and CI confirms it on each push.
 
 An earlier claim in this record, that a comparison build resolving npm 11 from
 `PATH` produced different gzip bytes, does not reproduce against npm 11.12.1.
