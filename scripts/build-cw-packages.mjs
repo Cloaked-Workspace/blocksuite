@@ -359,6 +359,20 @@ for (const { path } of cssFiles) {
   writeFileSync(path, `${lines.join('\n')}\n`);
 }
 
+// TypeScript's incremental build cache is build state, not something a package
+// should publish: roughly 96 KB each, and its `latestChangedDtsFile` field
+// varies with build scheduling. Measured over two forced rebuilds, it was the
+// only file in the whole 70-package graph whose bytes changed.
+let removedBuildInfoFiles = 0;
+for (const name of packageNames) {
+  for (const path of walk(packageRootFor(name), path =>
+    path.endsWith('.tsbuildinfo')
+  )) {
+    rmSync(path);
+    removedBuildInfoFiles++;
+  }
+}
+
 /**
  * Digest of what a package publishes, independent of the archiver.
  *
@@ -513,6 +527,7 @@ writeFileSync(
       distributionVersion,
       externalSourceScopeDependencies,
       inventoryContentSha256,
+      buildInfoFilesRemoved: removedBuildInfoFiles,
       packageCount: inventory.length,
       rewrittenPackageNames,
       rewrittenDependencySpecifiers,

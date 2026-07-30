@@ -56,10 +56,11 @@ refuses to build any other tree, and `inventory.json` records both SHAs.
 
 ## Package transformation proof
 
-Two independent local builds using Node 22.23.1, vendored Yarn 4.13.0 and the
-Node distribution's npm 10.9.8 produced byte-identical tarball inventories for
-all 70 packages. The builder now invokes that bundled npm directly and records
-its version rather than resolving an uncontrolled `npm` from `PATH`.
+Two independent forced rebuilds using vendored Yarn 4.13.0 produced an identical
+published-content digest for all 70 packages, one on Node 22.23.1 with npm
+10.9.8 and one on Node 24.15.0 with npm 11.12.1. The builder invokes the npm
+bundled with the running Node binary and records its version rather than
+resolving an uncontrolled `npm` from `PATH`.
 
 | Transformation | Count |
 |---|---:|
@@ -75,21 +76,26 @@ The checked-in exact name-mapping file SHA-256 was
 `203a1a41ea8b4e05336b7eb8b1b3c66f23a725f3fa8087ac4a33281fdb9b7805`.
 
 The aggregate published-content digest was
-`6b2e5dba1884b280a813f04b57da262a06aba216b8cbf7cd57648924dc95b056`. Unlike the
+`653412d2e20ccaf62ec4e262808e2924e6596da12c0dbf08d6a07c97459d8e79`. Unlike the
 value removed from an earlier revision of this record, it is defined and
 reproducible: `BUILDING.md` states the formula and the builder prints it.
 
-Two builds were compared across archivers, one on Node 22.23.1 with npm 10.9.8
-and one on Node 24.15.0 with npm 11.12.1. The content digest matched, and so did
-every `archiveSha256` and tarball size for all 70 packages.
+Introducing that digest immediately falsified this record's determinism claim.
+Two builds that reused an incremental `dist` agreed, but a forced rebuild
+produced different published content. Comparing the artifacts showed exactly one
+cause across the whole 70-package graph: `tsconfig.tsbuildinfo`, TypeScript's
+incremental build cache, whose `latestChangedDtsFile` varies with build
+scheduling. Every compiled `.js`, `.d.ts` and `.map` was already deterministic.
 
-That last part contradicts an earlier claim in this record, which said a
-comparison build resolving npm 11 from `PATH` produced different gzip bytes.
-That does not reproduce against npm 11.12.1. The original observation may have
-involved a different npm build or environment; it is unverified as written and
-should not be relied on. What is established is that the content digest does not
-depend on the archiver by construction, because npm plays no part in producing
-the bytes it covers.
+That file is build state and is now removed before packing. It should never have
+been published: dropping it took the 70 tarballs from 9.39 MB to 5.15 MB.
+
+With it gone, two forced rebuilds produced an identical content digest, one on
+Node 22.23.1 with npm 10.9.8 and one on Node 24.15.0 with npm 11.12.1.
+
+An earlier claim in this record, that a comparison build resolving npm 11 from
+`PATH` produced different gzip bytes, does not reproduce against npm 11.12.1.
+It is unverified as written and should not be relied on.
 
 No package in the 70-package graph was unreproducible from the tag;
 `@blocksuite/icons` remains externally sourced.

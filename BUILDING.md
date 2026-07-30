@@ -60,9 +60,11 @@ The builder:
    declaration imports;
 6. rewrites exports to `dist`, verifies supported accessor syntax and compiles
    Vanilla Extract output;
-7. packs 70 local tarballs and writes `inventory.json` with hashes and
+7. removes each package's `tsconfig.tsbuildinfo`, which is TypeScript's
+   incremental build cache rather than published content;
+8. packs 70 local tarballs and writes `inventory.json` with hashes and
    transformation counts;
-8. removes repository-local staging.
+9. removes repository-local staging.
 
 Packing invokes the npm CLI bundled with the running Node.js binary rather
 than an arbitrary `npm` from `PATH`. The recorded npm version is therefore
