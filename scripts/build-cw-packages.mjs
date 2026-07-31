@@ -369,6 +369,48 @@ for (const { path } of cssFiles) {
   writeFileSync(path, `${lines.join('\n')}\n`);
 }
 
+// Every imported manifest declares `sideEffects: false`, which is wrong: 62
+// packages ship an `effects.js` whose whole purpose is calling
+// `customElements.define`, and the precompiled Vanilla Extract files append a
+// `<style>` element to the document. A bundler that believes the metadata drops
+// both, registering no elements and loading no styles. esbuild does exactly
+// that, and reports it: "Ignoring this import because ... was marked as having
+// no side effects".
+//
+// The files are listed exactly rather than by glob. A first attempt declared
+// `**/effects.js` and friends, and the verification pass immediately caught
+// `affine-block-paragraph/dist/heading-icon.js`, which registers
+// `affine-paragraph-heading-icon` without following that naming convention.
+// Scanning for the effect itself cannot miss a file the way a convention can.
+// `import 'x'` runs a module for its effect. `import {} from 'x'` looks similar
+// but is what tsc leaves behind after eliding type-only imports, and 61 files
+// carry one — including the umbrella `effects.js`, whose source is nothing but
+// `import { type effects as ... }` declarations. Treating those as effects
+// marks most of the graph unshakeable for no reason, so only the binding-free
+// form counts.
+const sideEffectOnlyImport = /(?:^|\n)\s*import\s*['"]/;
+const carriesSideEffect = source =>
+  source.includes('customElements.define(') ||
+  source.includes('document.head.append(') ||
+  sideEffectOnlyImport.test(source);
+
+let packagesWithSideEffects = 0;
+let declaredSideEffectFiles = 0;
+for (const name of packageNames) {
+  const packageRoot = packageRootFor(name);
+  const effectFiles = walk(packageRoot, path => path.endsWith('.js'))
+    .filter(path => carriesSideEffect(readFileSync(path, 'utf8')))
+    .map(path => `./${relative(packageRoot, path)}`)
+    .sort();
+  if (effectFiles.length === 0) continue;
+  const manifestPath = join(packageRoot, 'package.json');
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+  manifest.sideEffects = effectFiles;
+  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  packagesWithSideEffects += 1;
+  declaredSideEffectFiles += effectFiles.length;
+}
+
 // TypeScript's incremental build cache is build state, not something a package
 // should publish: roughly 96 KB each, and its `latestChangedDtsFile` field
 // varies with build scheduling. Measured over two forced rebuilds, it was the
@@ -537,6 +579,8 @@ writeFileSync(
       distributionVersion,
       externalSourceScopeDependencies,
       inventoryContentSha256,
+      packagesWithDeclaredSideEffects: packagesWithSideEffects,
+      declaredSideEffectFiles,
       buildInfoFilesRemoved: removedBuildInfoFiles,
       packageCount: inventory.length,
       rewrittenPackageNames,
