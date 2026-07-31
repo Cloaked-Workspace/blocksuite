@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "upstreamRepository": "https://github.com/toeverything/AFFiNE.git",
+  "sourceCommit": "00576e1e7842fb63095cdc5d7a236321957b550c",
+  "sourceRefsObserved": [
+    "refs/heads/canary",
+    "refs/tags/v0.27.4-beta.0",
+    "refs/tags/v2026.7.29-canary.953"
+  ],
+  "subtreePath": "blocksuite",
+  "subtreeSha": "d0e6e70bfa88943c79dd5608ff3556e9aafb1783",
+  "forkPatches": {
+    "record": "provenance/FORK_PATCHES.md",
+    "patchedSubtreeSha": "0994a6d42d505b516cc4183be69f2084e5fdc839",
+    "fileCount": 7,
+    "commits": [
+      "cf644440ab60b6d3f674ed57cfa88014f6b35429",
+      "1ac84f9b0d2480c017d13977800606d4f3b0467f",
+      "eb61b3443730cb97f61eff4a301084fbe2b30cd6"
+    ]
+  },
+  "latestCommitAffectingSubtree": {
+    "commit": "b6fc0a2192cab6e4f9f8c2ba2d0f538c575e6b52",
+    "committedAt": "2026-07-28T13:02:38+08:00",
+    "subject": "fix(mobile): mobile keyboard padding (#15365)"
+  },
+  "importPath": "blocksuite",
+  "importedAt": "2026-07-29T13:51:29Z",
+  "licenses": [
+    {
+      "scope": "Upstream AFFiNE blocksuite subtree and public package manifests",
+      "spdx": "MIT",
+      "notice": "LICENSES/AFFINE-LICENSE and LICENSES/AFFINE-LICENSE-MIT"
+    },
+    {
+      "scope": "@blocksuite/bs-docs and @blocksuite/docs package manifests",
+      "spdx": "MPL-2.0"
+    }
+  ],
+  "excludedPaths": [
+    "All AFFiNE repository content outside blocksuite/, except the two copied root license notices"
+  ],
+  "deterministicTransformations": [
+    "Extract AFFiNE tree 00576e1e7842fb63095cdc5d7a236321957b550c:blocksuite unchanged at blocksuite/",
+    "Copy upstream root LICENSE to LICENSES/AFFINE-LICENSE outside the imported subtree",
+    "Copy upstream root LICENSE-MIT to LICENSES/AFFINE-LICENSE-MIT outside the imported subtree",
+    "Add this provenance record at provenance/AFFINE_BLOCKSUITE.json outside the imported subtree",
+    "Apply the fork patches recorded in provenance/FORK_PATCHES.md, producing subtree 0994a6d42d505b516cc4183be69f2084e5fdc839"
+  ]
+}

@@ -1,0 +1,8 @@
+name: 'Cloaked Workspace CodeQL configuration'
+
+paths-ignore:
+  # Vitest configuration files are test-harness wiring rather than shipped code.
+  # Their `log.includes('https://lit.dev/msg/dev-mode')` console filters are
+  # reported as incomplete URL substring sanitization, but the filter decides
+  # whether to print a Lit development warning and is not a security control.
+  - '**/vitest.config.ts'

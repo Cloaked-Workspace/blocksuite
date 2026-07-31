@@ -1,65 +1,140 @@
-# Building and Testing BlockSuite
+# Building and testing
 
-## Using Playground
+## Required environment
 
-To run BlockSuite from source, please ensure you have installed [Node.js](https://nodejs.org/en/download) and [yarn](https://yarnpkg.com/).
+- Node.js `22.23.1` (`.nvmrc`)
+- vendored Yarn `4.13.0`
+- npm `10.9.8`, bundled with the pinned Node.js distribution
+
+Do not substitute a newly resolved dependency graph. The checked-in lockfile is
+part of the pinned AFFiNE source-build provenance.
+
+## Install
 
 ```sh
-yarn install
-yarn dev
+corepack enable
+yarn install --immutable
 ```
 
-Be sure to use the correct version of yarn specified in package.json.
+An immutable install may report inherited peer-dependency warnings. It must not
+modify `package.json`, `yarn.lock`, `.nvmrc`, `.yarnrc.yml`, or the TypeScript
+configuration.
 
-Then there would be multiple entries to choose from:
-
-- The [localhost:5173/starter/?init](http://localhost:5173/starter/?init) entry is recommended for local debugging.
-- The [localhost:5173/starter/](http://localhost:5173/starter/) entry lists all of the starter presets.
-- The [localhost:5173](http://localhost:5173) entry is a comprehensive example with local-first (IndexedDB-based) data persistence and real-time collaboration support.
-
-All these entries are published to [try-blocksuite.vercel.app](https://try-blocksuite.vercel.app).
-
-And this would build the BlockSuite packages:
+## Build
 
 ```sh
 yarn build
 ```
 
-## Testing
+This builds the complete 70-project TypeScript reference graph from the
+byte-identical `blocksuite/` source.
 
-### Test Locally
-
-Adding test cases is strongly encouraged when you contribute new features and bug fixes. We use [Playwright](https://playwright.dev/) for E2E test, and [vitest](https://vitest.dev/) for unit test.
-
-To test locally, please make sure browser binaries are already installed via `npx playwright install`. Then there are multi commands to choose from:
+## Unit tests
 
 ```sh
-# run tests in headless mode in another terminal window
-yarn test
-
-# or run tests in headed mode for debugging
-yarn test -- --debug
+yarn test:unit
+yarn exec playwright install chromium
+yarn test:unit:browser
 ```
 
-In headed mode, `await page.pause()` can be used in test cases to suspend the test runner. Note that the usage of the [Playwright VSCode extension](https://marketplace.visualstudio.com/items?itemName=ms-playwright.playwright) is also highly recommended.
+The first command runs the Node and happy-dom configurations. The second test
+command runs the browser unit configurations against Chromium.
 
-To test browser compatibility, the `BROWSER` environment variable can be used:
+## Local distribution artifacts
+
+Choose an absolute disposable output directory outside the repository:
 
 ```sh
-# supports `firefox|webkit|chromium`
-BROWSER=firefox yarn test
-
-# passing playwright params with the -- syntax
-BROWSER=webkit yarn test -- --debug
+BLOCKSUITE_ARTIFACT_DIR=/private/tmp/cw-blocksuite-artifacts \
+  yarn build:packages
 ```
 
-To investigate flaky tests, we can mark a test case as `test.only`, then perform `npx playwright test --repeat-each=10` to reproduce the problem by repeated execution. It's also very helpful to run `yarn test -- --debug` with `await page.pause()` added before certain asserters.
+The builder:
 
-### Test Collaboration
+1. verifies `HEAD:blocksuite` against the recorded patched tree SHA;
+2. builds and packs the original `@blocksuite/*` workspaces;
+3. verifies the checked-in 70-package mapping and stages the CW dependency
+   closure under `@cloaked-workspace/blocksuite-*`;
+4. assigns prerelease version `0.27.0-cw.1`;
+5. rewrites only staged package metadata, internal compiled imports and
+   declaration imports;
+6. rewrites exports to `dist`, verifies supported accessor syntax and compiles
+   Vanilla Extract output;
+7. removes each package's `tsconfig.tsbuildinfo`, which is TypeScript's
+   incremental build cache rather than published content;
+8. packs 70 local tarballs and writes `inventory.json` with hashes and
+   transformation counts;
+9. removes repository-local staging.
 
-To test the real-time collaboration feature of BlockSuite locally, please follow these two simple steps:
+Packing invokes the npm CLI bundled with the running Node.js binary rather
+than an arbitrary `npm` from `PATH`. The recorded npm version is therefore
+part of the exact-byte artifact provenance.
 
-1. Open [localhost:5173/starter/?init&room=hello](http://localhost:5173/starter/?init&room=hello) in the first browser tab.
-2. Open [localhost:5173/starter/?room=hello](http://localhost:5173/starter/?room=hello) in a second tab.
+No package script is executed by `npm pack`, and this command does not publish.
 
-See the [documentation](https://blocksuite.io/guide/data-synchronization.html#document-streaming) about what's happening under the hood.
+### Consumer proof
+
+```sh
+BLOCKSUITE_ARTIFACT_DIR=/private/tmp/cw-blocksuite-artifacts \
+  yarn verify:consumer
+```
+
+Installs the tarballs into a disposable project outside the repository with
+scripts disabled, and asserts that all 70 packages install, that no unrewritten
+`@blocksuite/*` specifier survives apart from the external `@blocksuite/icons`,
+that every entry point and declared `types` path resolves, and that esbuild links
+the editor into a bundle above a size floor.
+
+The floor matters: every package declares `sideEffects: false`, so a bare
+`import 'pkg'` is tree-shaken to nothing and an empty bundle would otherwise
+look like a pass. The probe re-exports each package as a namespace instead.
+
+The distribution targets bundlers. Compiled output uses extensionless and
+directory-relative specifiers, which every bundler resolves and Node's ESM
+resolver rejects, so only a handful of packages load in plain Node. The script
+reports that count without failing on it.
+
+### Comparing two builds
+
+`inventory.json` records two kinds of hash per package, and they answer
+different questions.
+
+`archiveSha256` is SHA-256 over the `.tgz` bytes npm produced. It is only
+meaningful for a given archiver.
+
+`contentSha256` is SHA-256 over what the package publishes, with npm taking no
+part in producing the bytes. For each file in the set `npm pack --json` reports,
+sorted by path, the digest is fed:
+
+```
+path, NUL byte, file bytes read from the staged tree, NUL byte
+```
+
+`inventoryContentSha256` aggregates those. Take one line per package,
+
+```
+<distribution name>@<version> <contentSha256>
+```
+
+sort the lines, join with `\n`, append a trailing `\n`, and take SHA-256 of the
+result. The builder prints this value when it finishes.
+
+Use `inventoryContentSha256` to decide whether two independent builds staged the
+same content. It is invariant across archivers by construction, and changes if
+any published byte changes or if npm's inclusion rules change. It is a
+pre-publication check only, and is not a substitute for npm provenance
+attestations once publishing is configured.
+
+## Publication safety
+
+There is no publication workflow. Do not add one until all of the following are
+approved:
+
+- release and compatibility policy;
+- npm Trusted Publishing/OIDC configuration for every public package;
+- provenance and SBOM production;
+- immutable GitHub Release archival policy;
+- remediation or replacement of the audited ESLint/Next tooling chain used by
+  the downstream CW application.
+
+Never add a long-lived npm publication token.
