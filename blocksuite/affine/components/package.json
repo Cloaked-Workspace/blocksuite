@@ -34,6 +34,7 @@
     ".": "./src/index.ts",
     "./color-picker": "./src/color-picker/index.ts",
     "./icons": "./src/icons/index.ts",
+    "./icons/rc": "./src/icons/file-icons-rc.ts",
     "./peek": "./src/peek/index.ts",
     "./resource": "./src/resource/index.ts",
     "./portal": "./src/portal/index.ts",
