@@ -1,0 +1,31 @@
+/* The distribution ships no CSS. Theme tokens and fonts come from
+   `@toeverything/theme`, which 27 distribution packages depend on but which no
+   documentation names as something a consumer has to import. */
+@import '@toeverything/theme/style.css';
+@import '@toeverything/theme/fonts.css';
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+
+#app {
+  height: 100%;
+}
+
+/* The distribution ships no editor shell, so the host supplies the viewport box
+   the root block measures against. */
+.affine-page-viewport {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  container-name: viewport;
+  container-type: inline-size;
+  font-family: var(--affine-font-family);
+  background: var(--affine-background-primary-color);
+  color: var(--affine-text-primary-color);
+}

@@ -127,6 +127,38 @@ original scope. It is consumed from upstream and is not renamed or republished.
   apart from the external `@blocksuite/icons`.
 - Source tree after builds: unchanged and exact.
 
+- Consumer application proof, `yarn verify:consumer:app`: PASS. An application
+  built only from published packages mounts an editor, registers its custom
+  elements, renders the document, accepts typed input into the block model, and
+  re-renders on a model mutation.
+
+The application proof was added because the consumer proof stops one step short
+of the question. It links the packages and measures the bundle, which shows the
+modules were reachable, not that the editor works. Building an actual
+application immediately surfaced three things the link-only proof could not.
+
+`react` is a hard requirement that no package declares. Zero of the 70 manifests
+name it in `dependencies`, `peerDependencies` or `optionalDependencies`, yet
+`blocksuite-affine-components` re-exports `@blocksuite/icons/rc` from its public
+icon barrel, so any bundle reaching the view extensions fails to resolve
+`react/jsx-runtime`. The monorepo hides this: the root manifest carries `react`
+as a development dependency. The existing proof missed it because its probe
+re-exports four packages whose entry points never reach that barrel.
+
+Two options close it, and they are not equivalent. The builder can declare
+`react` a peer dependency of the affected package, which is the same class of
+manifest correction it already performs and which changes every consumer's
+install graph. Or the fork can patch the barrel to stop re-exporting the React
+icons, which is the better fix and changes the imported tree SHA and the
+provenance record. This is an owner decision and is listed as a release gate.
+
+The distribution also ships no CSS and no editor element. Theme tokens come from
+the external `@toeverything/theme`, and the consumer must supply both an
+ancestor carrying `.affine-page-viewport`, which the root block requires and
+throws without, and a container built on `BlockStdScope`. Neither is a defect —
+AFFiNE supplies its own — but neither was documented, and an application cannot
+be assembled without knowing them. `BUILDING.md` now records all three.
+
 The consumer proof is now a script in this repository and a step in CI. It
 previously existed only as the three claims below, recorded from a manual run
 that nothing could repeat:
@@ -177,4 +209,6 @@ vulnerability.
   long-lived token.
 - Add provenance/SBOM generation and signature verification.
 - Repeat the disposable CW proof from clean, published-shape artifacts.
+- Decide how the undeclared `react` requirement is resolved: a builder-declared
+  peer dependency, or a fork patch removing the React icon re-export.
 - Approve and test an archival immutable GitHub Release process separately.
