@@ -40,7 +40,7 @@ const sourceScope = '@blocksuite/';
 // reviewer can still verify the import mechanically and see exactly what the
 // fork changed on top of it.
 const upstreamSubtreeSha = 'd0e6e70bfa88943c79dd5608ff3556e9aafb1783';
-const patchedSubtreeSha = '0994a6d42d505b516cc4183be69f2084e5fdc839';
+const patchedSubtreeSha = '00e032a0b60085f0db8ea30d5d8e4bbb70fc251c';
 const distributionScope = '@cloaked-workspace/';
 const distributionVersion = '0.27.0-cw.1';
 const scopeStage = join(stageRoot, 'node_modules', '@cloaked-workspace');

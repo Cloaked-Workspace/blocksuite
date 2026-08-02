@@ -4,10 +4,10 @@ The `blocksuite/` tree was imported unchanged from AFFiNE commit
 `00576e1e7842fb63095cdc5d7a236321957b550c`, subtree SHA
 `d0e6e70bfa88943c79dd5608ff3556e9aafb1783`. The patches below are applied on
 top of that import, so the built tree is
-`0994a6d42d505b516cc4183be69f2084e5fdc839`.
+`00e032a0b60085f0db8ea30d5d8e4bbb70fc251c`.
 
 Reviewing the import mechanically therefore takes two steps rather than one:
-verify `d0e6e70b…` against upstream, then review the three commits listed here.
+verify `d0e6e70b…` against upstream, then review the four commits listed here.
 Nothing else in `blocksuite/` deviates.
 
 `scripts/build-cw-packages.mjs` refuses to build unless the tree matches the
@@ -52,6 +52,28 @@ with all of their tests passing.
 | `affine/gfx/group/vitest.config.ts` | allow the KaTeX quirks-mode warning |
 | `affine/gfx/pointer/vitest.config.ts` | allow the KaTeX quirks-mode warning |
 | `affine/all/vitest.config.ts` | allow MSW's redundant query-parameter notice and the `nonexistent-blob-id` lookup |
+
+## `f41192bbe129fe33bb9a1844a1eee76f8d918343` — drop the React icon re-export
+
+`affine/components/src/icons/index.ts` re-exported `./file-icons-rc`, which
+imports `@blocksuite/icons/rc` and so `react/jsx-runtime`. Thirty-six modules
+import that barrel and the view extensions reach it, so every consumer needed
+React installed to bundle the editor at all. No distribution package declares
+`react`; the monorepo's root manifest carries it as a development dependency,
+which is why the edge always resolved here and failed only outside.
+
+The re-exported module contributes one symbol, `getAttachmentFileIconRC`, used
+nowhere in the tree — it exists for AFFiNE's React application. The patch drops
+the re-export and adds an opt-in `./icons/rc` export entry, so the capability
+survives and only a consumer that asks for it pulls React.
+
+| File | Change |
+|---|---|
+| `affine/components/src/icons/index.ts` | drop `export * from './file-icons-rc'` |
+| `affine/components/package.json` | add the `./icons/rc` export entry |
+
+`yarn verify:consumer:app` covers the result: the proof application declares no
+React and mounts an editor.
 
 ## Upstream status
 

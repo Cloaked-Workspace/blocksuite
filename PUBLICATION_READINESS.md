@@ -44,14 +44,15 @@ The exact import commit has `blocksuite` tree SHA
 `d0e6e70bfa88943c79dd5608ff3556e9aafb1783`, matching AFFiNE commit
 `00576e1e7842fb63095cdc5d7a236321957b550c`.
 
-The imported tree is no longer what gets built. Seven files carry fork patches,
+The imported tree is no longer what gets built. Nine files carry fork patches,
 recorded in `provenance/FORK_PATCHES.md`, producing built tree
-`0994a6d42d505b516cc4183be69f2084e5fdc839`. Three bound the polynomial regular
+`00e032a0b60085f0db8ea30d5d8e4bbb70fc251c`. Three bound the polynomial regular
 expressions CodeQL reported; four align the console whitelists that made the
-imported vitest configurations fail on CI.
+imported vitest configurations fail on CI; two remove the React icon re-export
+that made `react` a hard requirement for every consumer.
 
 Mechanical review is therefore two steps rather than one: verify `d0e6e70b…`
-against upstream, then review those three commits. `scripts/build-cw-packages.mjs`
+against upstream, then review those four commits. `scripts/build-cw-packages.mjs`
 refuses to build any other tree, and `inventory.json` records both SHAs.
 
 ## Package transformation proof
@@ -68,7 +69,7 @@ resolving an uncontrolled `npm` from `PATH`.
 | Internal manifest dependency specifiers | 651 |
 | Compiled JavaScript specifiers | 3,716 |
 | Declaration specifiers | 4,426 |
-| Export entries mapped to `dist` | 438 |
+| Export entries mapped to `dist` | 439 |
 | Vanilla Extract files compiled | 10 |
 | Accessor files requiring extra downleveling | 0 |
 
@@ -76,7 +77,7 @@ The checked-in exact name-mapping file SHA-256 was
 `203a1a41ea8b4e05336b7eb8b1b3c66f23a725f3fa8087ac4a33281fdb9b7805`.
 
 The aggregate published-content digest was
-`506485c983a6f8addc791636d10c16c1779d65cb169e2e88a9e8462995d39e07`. Unlike the
+`4b7a0f7f105c66eb87ae63cee742a6d52b55f1f1acf5f30225209c85eb9b2c24`. Unlike the
 value removed from an earlier revision of this record, it is defined and
 reproducible: `BUILDING.md` states the formula and the builder prints it.
 
@@ -97,12 +98,15 @@ record carries. The two builds it previously described were both on one machine,
 which is why they agreed on output that later proved not to be deterministic.
 
 Those three builds agreed on `653412d2e20ccaf62ec4e262808e2924e6596da12c0dbf08d6a07c97459d8e79`.
-The value has moved twice since, both times because the builder started
+The value has moved three times since. Twice because the builder started
 correcting a manifest defect: first dropping a `types` field that pointed at a
 missing file, then replacing the blanket `sideEffects: false` with the actual
-list of effect-bearing files. The cross-platform claim therefore belongs to the
-earlier value; the current one has so far been reproduced by two forced local
-rebuilds, and CI confirms it on each push.
+list of effect-bearing files. The third time is the first move caused by a
+source change rather than a manifest correction — the fork patch dropping the
+React icon re-export, which also adds the export entry that took the mapped
+count from 438 to 439. The cross-platform claim therefore belongs to the
+earliest value; the current one has so far been reproduced by one forced local
+rebuild on Linux, and CI confirms it on each push.
 
 An earlier claim in this record, that a comparison build resolving npm 11 from
 `PATH` produced different gzip bytes, does not reproduce against npm 11.12.1.
@@ -126,6 +130,46 @@ original scope. It is consumed from upstream and is not renamed or republished.
 - Installed internal compiled/declaration references to `@blocksuite/*`: zero,
   apart from the external `@blocksuite/icons`.
 - Source tree after builds: unchanged and exact.
+
+- Consumer application proof, `yarn verify:consumer:app`: PASS. An application
+  built only from published packages mounts an editor, registers its custom
+  elements, renders the document, accepts typed input into the block model, and
+  re-renders on a model mutation.
+
+The application proof was added because the consumer proof stops one step short
+of the question. It links the packages and measures the bundle, which shows the
+modules were reachable, not that the editor works. Building an actual
+application immediately surfaced three things the link-only proof could not.
+
+`react` was a hard requirement that no package declared. Zero of the 70
+manifests named it in `dependencies`, `peerDependencies` or
+`optionalDependencies`, yet `blocksuite-affine-components` re-exported
+`@blocksuite/icons/rc` from its public icon barrel, so any bundle reaching the
+view extensions failed to resolve `react/jsx-runtime`. The monorepo hid this:
+the root manifest carries `react` as a development dependency. The existing
+proof missed it because its probe re-exports four packages whose entry points
+never reach that barrel.
+
+The fix was the fork patch rather than the builder-declared peer dependency.
+Declaring the peer would have made the requirement visible and installable
+while leaving it mandatory for every consumer; the patch removes it. The
+re-exported module contributes one symbol, `getAttachmentFileIconRC`, used
+nowhere in the tree, and it is now reachable at an opt-in `./icons/rc` subpath,
+so React consumers keep it and Lit consumers never pull it in. The cost is the
+one this record exists to track: the imported tree SHA moved, and the patch is
+recorded in `provenance/FORK_PATCHES.md`.
+
+Both directions are verified. Without React installed, the proof application
+bundles and mounts an editor from a 403-package install. With React installed,
+`@cloaked-workspace/blocksuite-affine-components/icons/rc` resolves and still
+exports `getAttachmentFileIconRC`.
+
+The distribution also ships no CSS and no editor element. Theme tokens come from
+the external `@toeverything/theme`, and the consumer must supply both an
+ancestor carrying `.affine-page-viewport`, which the root block requires and
+throws without, and a container built on `BlockStdScope`. Neither is a defect —
+AFFiNE supplies its own — but neither was documented, and an application cannot
+be assembled without knowing them. `BUILDING.md` now records all three.
 
 The consumer proof is now a script in this repository and a step in CI. It
 previously existed only as the three claims below, recorded from a manual run

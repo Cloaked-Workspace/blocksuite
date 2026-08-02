@@ -58,5 +58,10 @@ jobs:
         env:
           BLOCKSUITE_ARTIFACT_DIR: ${{ runner.temp }}/cw-blocksuite-artifacts
         run: yarn verify:consumer
+      - run: yarn exec playwright install --with-deps chromium
+      - name: Verify a real application mounts and edits a document
+        env:
+          BLOCKSUITE_ARTIFACT_DIR: ${{ runner.temp }}/cw-blocksuite-artifacts
+        run: yarn verify:consumer:app
       - name: Verify source and tracked inputs remain unchanged
         run: git diff --exit-code

@@ -55,7 +55,14 @@ yarn build
 yarn test:unit
 yarn test:unit:browser
 BLOCKSUITE_ARTIFACT_DIR=/absolute/path/outside/repository yarn build:packages
+BLOCKSUITE_ARTIFACT_DIR=/absolute/path/outside/repository yarn verify:consumer
+BLOCKSUITE_ARTIFACT_DIR=/absolute/path/outside/repository yarn verify:consumer:app
 ```
+
+`verify:consumer` checks that the tarballs install, resolve and link.
+`verify:consumer:app` goes further: it builds a real application that imports
+only published packages, then drives it in a browser to confirm the editor
+mounts, renders, and round-trips edits.
 
 ## Publication policy
 
