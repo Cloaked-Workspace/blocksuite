@@ -56,13 +56,12 @@ const dependencies = Object.fromEntries(
     `file:${join(artifactDir, entry.filename)}`,
   ])
 );
-// `lit` is the render entry point the application itself calls.
+// `lit` is the render entry point the application itself calls, and the only
+// dependency this proof adds. React is deliberately absent: the icon barrel used
+// to re-export `@blocksuite/icons/rc`, which made `react/jsx-runtime` a hard
+// requirement for every consumer. This install failing to bundle is what would
+// catch that returning.
 dependencies.lit = '^3.0.0';
-// React is not optional for a consumer, even a Lit-only one:
-// `blocksuite-affine-components` re-exports `@blocksuite/icons/rc` from its
-// public icon barrel, so any bundle reaching the view extensions needs
-// `react/jsx-runtime` to resolve. No distribution package declares it.
-dependencies.react = '^19.0.0';
 
 mkdirSync(join(projectDir, 'src'), { recursive: true });
 writeFileSync(

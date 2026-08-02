@@ -112,18 +112,19 @@ block model, and that a model mutation reaches the view.
 Set `CHROMIUM_PATH` to use a browser Playwright did not install itself, and
 `CONSUMER_APP_SCREENSHOT` to write a screenshot of the mounted editor.
 
-Two requirements the application had to satisfy are not visible from the package
-metadata, and a consumer will hit both:
+The proof application declares exactly one dependency beyond the distribution:
+`lit`, which it calls to render. That is deliberate. `react` used to be required
+too, because `blocksuite-affine-components` re-exported `@blocksuite/icons/rc`
+from its public icon barrel, and a fork patch removed it — this install failing
+to bundle is what would catch that returning. The React helper is still
+available at the opt-in `blocksuite-affine-components/icons/rc` subpath.
 
-- `react` must be installed. `blocksuite-affine-components` re-exports
-  `@blocksuite/icons/rc` from its public icon barrel, so any bundle that reaches
-  the view extensions must resolve `react/jsx-runtime`. None of the 70 packages
-  declares it.
-- The distribution ships no CSS and no editor shell. Theme tokens come from
-  `@toeverything/theme`, and the host must provide both an ancestor carrying
-  `.affine-page-viewport` — the root block registers
-  `ViewportElementExtension('.affine-page-viewport')` and throws without it —
-  and its own container element built on `BlockStdScope`.
+One requirement remains that the package metadata cannot express: the
+distribution ships no CSS and no editor shell. Theme tokens come from
+`@toeverything/theme`, and the host must provide both an ancestor carrying
+`.affine-page-viewport` — the root block registers
+`ViewportElementExtension('.affine-page-viewport')` and throws without it — and
+its own container element built on `BlockStdScope`.
 
 Note also that `@cloaked-workspace/blocksuite-affine/effects` registers nothing.
 Its source is type-only imports, so it compiles to binding-free imports and the
