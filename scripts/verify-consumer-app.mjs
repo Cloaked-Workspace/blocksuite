@@ -22,7 +22,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, extname, join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -116,22 +116,32 @@ execFileSync(
   { cwd: projectDir, stdio: 'inherit' }
 );
 
-const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css' };
+// The application is three known files, so the request path selects one rather
+// than building one. Joining a request path onto a directory would be a path
+// traversal even here, where the server is bound to the loopback interface on an
+// ephemeral port and serves a disposable directory.
+const served = new Map([
+  ['/', ['index.html', 'text/html']],
+  ['/index.html', ['index.html', 'text/html']],
+  ['/bundle.js', ['bundle.js', 'text/javascript']],
+  ['/bundle.css', ['bundle.css', 'text/css']],
+]);
 const server = createServer((req, res) => {
-  const path = req.url === '/' ? '/index.html' : req.url.split('?')[0];
-  if (path === '/favicon.ico') {
+  const requested = req.url.split('?')[0];
+  // Browsers ask for this unprompted; a 404 would land in the console-error
+  // assertion below.
+  if (requested === '/favicon.ico') {
     res.writeHead(204).end();
     return;
   }
-  try {
-    const body = readFileSync(join(projectDir, path));
-    res.writeHead(200, {
-      'content-type': types[extname(path)] ?? 'application/octet-stream',
-    });
-    res.end(body);
-  } catch {
+  const entry = served.get(requested);
+  if (!entry) {
     res.writeHead(404).end('not found');
+    return;
   }
+  const [file, type] = entry;
+  res.writeHead(200, { 'content-type': type });
+  res.end(readFileSync(join(projectDir, file)));
 });
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const url = `http://127.0.0.1:${server.address().port}/`;
