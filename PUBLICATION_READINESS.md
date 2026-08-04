@@ -104,9 +104,23 @@ missing file, then replacing the blanket `sideEffects: false` with the actual
 list of effect-bearing files. The third time is the first move caused by a
 source change rather than a manifest correction — the fork patch dropping the
 React icon re-export, which also adds the export entry that took the mapped
-count from 438 to 439. The cross-platform claim therefore belongs to the
-earliest value; the current one has so far been reproduced by one forced local
-rebuild on Linux, and CI confirms it on each push.
+count from 438 to 439.
+
+The current value is reproduced across platforms: a forced Linux rebuild, the
+Linux CI runner on Node 22.23.1 with npm 10.9.8, and an owner rebuild on macOS.
+The macOS run was incremental rather than forced — TypeScript reused `dist` for
+every project the patch did not invalidate — so it is weaker evidence than the
+forced runs on its own, and it is reported that way. It still agreed to the
+byte.
+
+That the same macOS checkout produced `506485c9…` before pulling the patch, the
+exact value the pre-patch Linux build produced, is a second cross-platform
+agreement rather than a coincidence worth ignoring. It also shows the guard
+working as intended in the mundane case: the builder verified a stale tree
+against a stale pin and built successfully, because both were consistently old.
+Nothing detected the staleness except the printed export count and digest.
+A reviewer comparing a build against this record should check those two lines
+before anything else.
 
 An earlier claim in this record, that a comparison build resolving npm 11 from
 `PATH` produced different gzip bytes, does not reproduce against npm 11.12.1.
