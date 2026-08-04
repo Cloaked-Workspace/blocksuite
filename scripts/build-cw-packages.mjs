@@ -637,8 +637,21 @@ if (
 // builds of the same content produce byte-identical documents — the same
 // property `inventoryContentSha256` exists to give the tarballs. A random serial
 // number would silently destroy that.
-const purlFor = (name, version) =>
-  `pkg:npm/${name.replace('@', '%40').replace('/', '/')}@${version}`;
+// purl writes an npm scope as `%40scope/name`. Building that with
+// `String.prototype.replace` and a string pattern rewrites only the first match
+// and leaves the separator alone, which happens to be right — a scoped npm name
+// carries exactly one `@` and one `/` — and is wrong as written. CodeQL flagged
+// it, correctly: an encoder should not depend on that coincidence holding.
+const npmPurl = (name, version) => {
+  const scoped = name.startsWith('@');
+  const [scope, bare] = scoped ? name.slice(1).split('/', 2) : [undefined, name];
+  const path = scoped
+    ? `%40${encodeURIComponent(scope)}/${encodeURIComponent(bare)}`
+    : encodeURIComponent(name);
+  return version === undefined
+    ? `pkg:npm/${path}`
+    : `pkg:npm/${path}@${encodeURIComponent(version)}`;
+};
 const serialFrom = digest =>
   'urn:uuid:' +
   [
@@ -670,16 +683,16 @@ for (const entry of inventory) {
   for (const field of ['dependencies', 'peerDependencies', 'optionalDependencies']) {
     for (const [dependency, range] of Object.entries(manifest[field] ?? {})) {
       if (distributionNameSet.has(dependency)) {
-        dependsOn.push(purlFor(dependency, distributionVersion));
+        dependsOn.push(npmPurl(dependency, distributionVersion));
         continue;
       }
       const known = externalRequirements.get(dependency) ?? new Set();
       known.add(range);
       externalRequirements.set(dependency, known);
-      dependsOn.push(`pkg:npm/${dependency.replace('@', '%40')}`);
+      dependsOn.push(npmPurl(dependency));
     }
   }
-  const purl = purlFor(entry.name, entry.version);
+  const purl = npmPurl(entry.name, entry.version);
   components.push({
     type: 'library',
     'bom-ref': purl,
@@ -701,7 +714,7 @@ for (const entry of inventory) {
   dependencyGraph.push({ ref: purl, dependsOn: [...new Set(dependsOn)].sort() });
 }
 for (const [name, ranges] of [...externalRequirements].sort()) {
-  const ref = `pkg:npm/${name.replace('@', '%40')}`;
+  const ref = npmPurl(name);
   components.push({
     type: 'library',
     'bom-ref': ref,

@@ -37,15 +37,32 @@ const argOf = name => {
 };
 const keepProject = argv.includes('--keep');
 
-// `--app` may point at the application itself or at a repository root that
-// contains it. Guessing between them is cheap and saves a support round trip.
-const appArgument = resolve(argOf('--app') ?? process.env.CW_APP_DIR ?? '');
+// Whether one path is inside another. `startsWith` on the string is the obvious
+// spelling and the wrong one: `/tmp/artifacts2` starts with `/tmp/artifacts`,
+// so a sibling directory with a prefix name passes as containment.
+const containedIn = (parent, child) => {
+  const rel = relative(parent, child);
+  return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel));
+};
+
+// Check the argument before resolving it: `resolve('')` is the current working
+// directory, so a missing `--app` would otherwise silently nominate wherever the
+// script happens to be run from — and in this repository that directory has a
+// `package.json`, so it would get as far as a confusing error about declaring
+// no distribution packages.
+const appOption = argOf('--app') ?? process.env.CW_APP_DIR;
+if (!appOption) {
+  throw new Error('Pass the application with --app /abs/path, or set CW_APP_DIR.');
+}
+// It may point at the application itself or at a repository root that contains
+// it. Guessing between them is cheap and saves a support round trip.
+const appArgument = resolve(appOption);
 const appCandidates = [appArgument, join(appArgument, 'web'), join(appArgument, 'app')];
 const appDir = appCandidates.find(path => existsSync(join(path, 'package.json')));
-if (!appArgument || !appDir) {
+if (!appDir) {
   throw new Error(
-    'Pass the application with --app /abs/path (or set CW_APP_DIR). Looked for a ' +
-      `package.json in:\n${appCandidates.map(p => `  ${p}`).join('\n')}`
+    `No package.json found for --app ${appArgument}. Looked in:\n` +
+      appCandidates.map(p => `  ${p}`).join('\n')
   );
 }
 if (appDir !== appArgument) {
@@ -168,7 +185,7 @@ const adoptSibling = target => {
   siblings.set(name, record);
   return record;
 };
-const escapesApp = target => relative(appDir, target).startsWith('..');
+const escapesApp = target => !containedIn(appDir, target);
 
 // Declared as `file:` or `link:` dependencies.
 for (const field of dependencyFields) {
@@ -304,7 +321,7 @@ if (installed) {
       const name = path.replace(/^node_modules\//, '');
       if (!tarballFor.has(name)) continue;
       const resolved = (entry.resolved ?? '').replace(/^file:/, '');
-      if (!resolve(workDir, decodeURIComponent(resolved)).startsWith(artifactDir)) {
+      if (!containedIn(artifactDir, resolve(workDir, decodeURIComponent(resolved)))) {
         strayResolutions.push(`${name} <- ${entry.resolved ?? 'unrecorded'}`);
       }
     }
