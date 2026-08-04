@@ -167,6 +167,10 @@ original scope. It is consumed from upstream and is not renamed or republished.
   built only from published packages mounts an editor, registers its custom
   elements, renders the document, accepts typed input into the block model, and
   re-renders on a model mutation.
+- Real consumer proof, `scripts/verify-cw-app.mjs`: PASS. The CW application's
+  own suite runs 23/23 and its Next.js 16.2.12 production build succeeds against
+  the staged artifacts, with every distribution package asserted to have
+  resolved from them. See "The real consumer" below.
 
 The application proof was added because the consumer proof stops one step short
 of the question. It links the packages and measures the bundle, which shows the
@@ -203,16 +207,45 @@ throws without, and a container built on `BlockStdScope`. Neither is a defect �
 AFFiNE supplies its own — but neither was documented, and an application cannot
 be assembled without knowing them. `BUILDING.md` now records all three.
 
-The consumer proof is now a script in this repository and a step in CI. It
-previously existed only as the three claims below, recorded from a manual run
-that nothing could repeat:
+## The real consumer
 
-- Disposable CW tests: PASS, 16/16.
-- Disposable CW Next.js 16.2.12 production build: PASS.
+This record carried two claims for a long time that nothing could repeat, from a
+manual run against the CW application: tests 16/16, and a passing Next.js
+16.2.12 production build. They are now superseded rather than retained.
 
-Those two are retained as history rather than evidence. Neither is reproducible
-from this repository, and the CW project they ran against is not part of it.
-Automating an equivalent against the real consumer is the remaining work.
+`scripts/verify-cw-app.mjs` runs the real consumer against staged artifacts. On
+macOS, Node 20.18.2 with npm 11.12.1, against artifacts whose content digest is
+`4b7a0f7f105c66eb87ae63cee742a6d52b55f1f1acf5f30225209c85eb9b2c24`:
+
+- 70 of 70 distribution packages declared by the application, all under the
+  distribution names.
+- Install: PASS, 860 packages.
+- **Every distribution package resolved from the artifact directory**, asserted
+  from npm's `node_modules/.package-lock.json` rather than inferred.
+- Test suite: PASS, 23/23.
+- Next.js 16.2.12 production build: PASS, 26 routes.
+
+The middle line is what makes the other two mean anything. The application
+already declares the distribution names, so a harness that installed whatever it
+normally installs would produce an identical-looking PASS having tested nothing.
+An earlier run did exactly that shape of thing and could not be distinguished
+from a real one until the assertion existed. The check was confirmed non-vacuous
+against a deliberately wrong artifact directory: 70 of 70 flagged.
+
+The suite is 23 tests, not the 16 this record claimed; it grew. Four of them
+independently verify findings recorded above — that no React reaches the editor
+bundle, that the editor's imports register the custom elements, that the
+Vanilla Extract styles survive tree shaking, and that a content digest matches.
+The consumer testing the same properties from the outside is worth more than
+this repository testing them from the inside.
+
+Two things the run surfaced without failing. The application's Node, 20.18.2, is
+below what one of its lint dependencies asks for, which npm reports and nothing
+enforces. And `ydocs`, a sibling the tests reach by relative path, installs its
+own dependency graph, which is where "Yjs was already imported" comes from: the
+application graph itself holds exactly one yjs. That warning is therefore not
+evidence for the yjs concern recorded below, and the concern is not evidence
+for the warning. They are separate.
 
 Writing the script immediately surfaced two things the manual claims had not.
 `@blocksuite/global` shipped a `types` field pointing at a file that does not
@@ -252,5 +285,12 @@ vulnerability.
 - Configure npm Trusted Publishing independently for all packages, with no
   long-lived token.
 - Add provenance/SBOM generation and signature verification.
-- Repeat the disposable CW proof from clean, published-shape artifacts.
+- ~~Repeat the disposable CW proof from clean, published-shape artifacts.~~ Done:
+  `scripts/verify-cw-app.mjs`, recorded under "The real consumer". Not yet run in
+  CI, which would need the application available to the workflow.
+- Decide whether `yjs` should be a peer dependency of the 21 packages that
+  declare it as a regular one. Duplicate copies break Yjs constructor checks, and
+  a monorepo hides the risk by hoisting to one copy. No duplicate has been
+  observed inside a consumer's own graph, so this is a latent hazard rather than
+  a defect, and closing it means patching 21 upstream manifests.
 - Approve and test an archival immutable GitHub Release process separately.
