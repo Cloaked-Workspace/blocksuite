@@ -7,11 +7,6 @@
 // exactly how the mandatory React edge survived `verify-consumer.mjs`. Running
 // the real consumer is the check that cannot be written to fit.
 //
-// The readiness record has claimed this result since before it could be
-// repeated: "Disposable CW tests: PASS, 16/16" and a passing Next.js production
-// build, both from a manual run nothing could reproduce. This script is the
-// missing piece.
-//
 // Usage:
 //   BLOCKSUITE_ARTIFACT_DIR=/abs/path/to/artifacts \
 //     node scripts/verify-cw-app.mjs --app /abs/path/to/cloakedworkspace
@@ -30,8 +25,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
-import { dirname } from 'node:path';
+import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -40,14 +34,21 @@ const argOf = name => {
   const index = argv.indexOf(name);
   return index === -1 ? undefined : argv[index + 1];
 };
-
-const appDir = resolve(argOf('--app') ?? process.env.CW_APP_DIR ?? '');
 const keepProject = argv.includes('--keep');
-if (!appDir || !existsSync(join(appDir, 'package.json'))) {
+
+// `--app` may point at the application itself or at a repository root that
+// contains it. Guessing between them is cheap and saves a support round trip.
+const appArgument = resolve(argOf('--app') ?? process.env.CW_APP_DIR ?? '');
+const appCandidates = [appArgument, join(appArgument, 'web'), join(appArgument, 'app')];
+const appDir = appCandidates.find(path => existsSync(join(path, 'package.json')));
+if (!appArgument || !appDir) {
   throw new Error(
-    'Pass the application checkout with --app /abs/path (or set CW_APP_DIR). ' +
-      'It must contain a package.json.'
+    'Pass the application with --app /abs/path (or set CW_APP_DIR). Looked for a ' +
+      `package.json in:\n${appCandidates.map(p => `  ${p}`).join('\n')}`
   );
+}
+if (appDir !== appArgument) {
+  console.log(`Resolved --app ${appArgument} to ${appDir}`);
 }
 
 const artifactDir = resolve(
@@ -64,56 +65,63 @@ const inventory = JSON.parse(readFileSync(inventoryPath, 'utf8'));
 const mapping = JSON.parse(
   readFileSync(join(root, 'provenance/PACKAGE_NAME_MAPPING.json'), 'utf8')
 );
-const distributionFor = new Map(mapping.packages.map(p => [p.source, p.distribution]));
 const tarballFor = new Map(
   inventory.packages.map(p => [p.name, join(artifactDir, p.filename)])
 );
+const distributionFor = new Map(mapping.packages.map(p => [p.source, p.distribution]));
 
 console.log(
   `Verifying ${appDir}\n` +
     `against ${inventory.packageCount} packages from ${artifactDir}\n` +
-    `Built with Node ${inventory.node}, npm ${inventory.npm}, content ${inventory.inventoryContentSha256}\n`
+    `Built with Node ${inventory.node}, npm ${inventory.npm}, content ${inventory.inventoryContentSha256}` +
+    (inventory.nodePinHonored === false
+      ? `\nArtifacts were built off-pin (${inventory.nodeEngineRange})`
+      : '') +
+    '\n'
 );
 
 const appManifest = JSON.parse(readFileSync(join(appDir, 'package.json'), 'utf8'));
-
-// Which BlockSuite packages does the application actually declare? Only those
-// get redirected; the rest of its dependency graph is left exactly as it is.
 const dependencyFields = ['dependencies', 'devDependencies', 'optionalDependencies'];
-const declared = [];
+
+// A consumer may name these packages either way, and both must work. An
+// application converted to the distribution names is the current shape; one
+// still on the upstream names is what a fresh consumer of published packages
+// would look like, and it needs the original specifier linked to the renamed
+// package. The inventory and the mapping decide which case applies, so no prefix
+// is hardcoded.
+const redirected = [];
+const unmapped = [];
 for (const field of dependencyFields) {
   for (const name of Object.keys(appManifest[field] ?? {})) {
-    if (name.startsWith('@blocksuite/')) declared.push({ field, name });
+    if (mapping.externalUnchanged.includes(name)) continue;
+    if (tarballFor.has(name)) {
+      redirected.push({ field, name, distribution: name, needsAlias: false });
+      continue;
+    }
+    const distribution = distributionFor.get(name);
+    if (distribution && tarballFor.has(distribution)) {
+      redirected.push({ field, name, distribution, needsAlias: true });
+      continue;
+    }
+    if (name.startsWith('@blocksuite/')) unmapped.push(name);
   }
 }
-if (declared.length === 0) {
+if (redirected.length === 0) {
   throw new Error(
-    'The application declares no @blocksuite/* dependencies. Either the wrong ' +
-      'directory was passed, or it consumes the editor some other way — say ' +
-      'which, because this script cannot guess.'
+    'The application declares no packages this distribution provides, under ' +
+      'either the upstream or the distribution names. Either the wrong directory ' +
+      'was passed, or it consumes the editor some other way — say which, because ' +
+      'this script cannot guess.'
   );
 }
 
-const redirected = [];
-const unmapped = [];
-for (const { field, name } of declared) {
-  // `@blocksuite/icons` is consumed from upstream and deliberately not
-  // republished, so it must keep resolving to the real registry package.
-  if (mapping.externalUnchanged.includes(name)) continue;
-  const distribution = distributionFor.get(name);
-  const tarball = distribution && tarballFor.get(distribution);
-  if (!tarball) {
-    unmapped.push(name);
-    continue;
-  }
-  redirected.push({ field, name, distribution, tarball });
-}
-
-console.log(`Application declares ${declared.length} @blocksuite/* dependencies`);
-console.log(`Redirecting ${redirected.length} to the distribution`);
-for (const entry of redirected) {
-  console.log(`  ${entry.name} -> ${entry.distribution}`);
-}
+const aliased = redirected.filter(entry => entry.needsAlias);
+console.log(
+  `Application declares ${redirected.length} of ${inventory.packageCount} distribution packages` +
+    (aliased.length > 0
+      ? `, ${aliased.length} under the upstream names`
+      : ', all under the distribution names')
+);
 if (unmapped.length > 0) {
   // Not fatal on its own: it means the application uses a package this
   // distribution does not carry, which is a finding rather than a script error.
@@ -127,28 +135,48 @@ if (unmapped.length > 0) {
 // Copy rather than mutate. The application checkout is somebody's working tree.
 const projectDir = mkdtempSync(join(tmpdir(), 'cw-app-proof-'));
 const workDir = join(projectDir, 'app');
+const skipDirectories = ['node_modules', '.next', '.git', 'dist', 'build', '.turbo'];
+const copyTree = (from, to) => {
+  cpSync(from, to, {
+    recursive: true,
+    dereference: false,
+    filter: source => {
+      const rel = source.slice(from.length + 1);
+      return !rel || !skipDirectories.includes(rel.split('/')[0]);
+    },
+  });
+};
 console.log(`\nCopying the application to ${workDir}`);
-cpSync(appDir, workDir, {
-  recursive: true,
-  dereference: false,
-  filter: source => {
-    const relative = source.slice(appDir.length + 1);
-    if (!relative) return true;
-    const top = relative.split('/')[0];
-    return !['node_modules', '.next', '.git', 'dist', 'build', '.turbo'].includes(top);
-  },
-});
+copyTree(appDir, workDir);
+
+// Local sibling packages — a workspace the tests import, say — are declared with
+// `file:` or `link:` specs pointing outside the application. They have to travel
+// with it, or the copy cannot install.
+const workManifest = JSON.parse(readFileSync(join(workDir, 'package.json'), 'utf8'));
+const siblings = [];
+for (const field of dependencyFields) {
+  for (const [name, spec] of Object.entries(workManifest[field] ?? {})) {
+    const match = typeof spec === 'string' && spec.match(/^(file:|link:)(.+)$/);
+    if (!match) continue;
+    const target = resolve(appDir, match[2]);
+    if (existsSync(join(target, 'package.json')) && relative(appDir, target).startsWith('..')) {
+      const copied = join(projectDir, basename(target));
+      if (!existsSync(copied)) {
+        console.log(`Copying the ${basename(target)} local dependency to ${copied}`);
+        copyTree(target, copied);
+        siblings.push({ name: basename(target), dir: copied });
+      }
+      workManifest[field][name] = `${match[1]}${
+        isAbsolute(match[2]) ? copied : relative(workDir, copied)
+      }`;
+    }
+  }
+}
 
 // Every distribution package goes in as a `file:` dependency, not just the ones
 // the application names. The tarballs depend on each other by version, and those
 // versions are not published anywhere, so the whole graph has to be supplied
 // locally — the same reason `verify-consumer.mjs` installs all 70.
-//
-// An `npm:` alias would be the obvious way to keep the application's own
-// `@blocksuite/*` imports resolving, but it resolves against the registry, where
-// nothing is published. The names are linked into `node_modules` after install
-// instead, which is what an alias would have produced anyway.
-const workManifest = JSON.parse(readFileSync(join(workDir, 'package.json'), 'utf8'));
 for (const entry of redirected) {
   delete workManifest[entry.field][entry.name];
 }
@@ -156,10 +184,7 @@ workManifest.dependencies ??= {};
 for (const entry of inventory.packages) {
   workManifest.dependencies[entry.name] = `file:${join(artifactDir, entry.filename)}`;
 }
-writeFileSync(
-  join(workDir, 'package.json'),
-  `${JSON.stringify(workManifest, null, 2)}\n`
-);
+writeFileSync(join(workDir, 'package.json'), `${JSON.stringify(workManifest, null, 2)}\n`);
 
 // A stale lockfile pins the old graph and would defeat the redirect.
 for (const lock of ['package-lock.json', 'yarn.lock', 'pnpm-lock.yaml']) {
@@ -178,11 +203,15 @@ const packageManager = existsSync(join(appDir, 'pnpm-lock.yaml'))
 console.log(`Package manager: ${packageManager}`);
 
 const results = [];
-const step = (name, command, args) => {
+const step = (name, command, args, options = {}) => {
   console.log(`\n=== ${name} ===`);
   console.log(`$ ${command} ${args.join(' ')}`);
   try {
-    execFileSync(command, args, { cwd: workDir, stdio: 'inherit', env: process.env });
+    execFileSync(command, args, {
+      cwd: options.cwd ?? workDir,
+      stdio: 'inherit',
+      env: process.env,
+    });
     results.push([name, 'PASS']);
     return true;
   } catch (error) {
@@ -199,25 +228,72 @@ const installArgs =
       : ['install', '--mode=skip-build'];
 const installed = step('Install against the distribution', packageManager, installArgs);
 
-if (installed) {
-  // Point the application's original specifiers at the installed distribution
-  // packages, so its own source keeps resolving unchanged. This is the step that
-  // makes the run a test of the distribution rather than a test of a rename.
-  console.log('\nLinking the original names to the distribution packages');
-  for (const entry of redirected) {
-    const target = join(workDir, 'node_modules', entry.distribution);
-    const link = join(workDir, 'node_modules', entry.name);
-    if (!existsSync(target)) {
-      throw new Error(`Expected ${entry.distribution} to be installed at ${target}`);
-    }
-    mkdirSync(dirname(link), { recursive: true });
-    rmSync(link, { recursive: true, force: true });
-    symlinkSync(target, link, 'dir');
-    console.log(`  ${entry.name} -> ${entry.distribution}`);
-  }
+// A sibling with its own lockfile installs its own graph; the application's
+// install does not do it for it.
+for (const sibling of siblings) {
+  if (!existsSync(join(sibling.dir, 'package.json'))) continue;
+  const hasLock = existsSync(join(sibling.dir, 'package-lock.json'));
+  step(
+    `Install the ${sibling.name} local dependency`,
+    'npm',
+    [hasLock ? 'ci' : 'install', '--ignore-scripts', '--no-audit', '--no-fund'],
+    { cwd: sibling.dir }
+  );
 }
 
 if (installed) {
+  // The claim this whole script exists to support is that the application ran
+  // against these artifacts. Asserting it beats inferring it: npm records where
+  // each package actually came from, so read that rather than trusting the
+  // rewrite above.
+  const lockPath = join(workDir, 'node_modules/.package-lock.json');
+  const strayResolutions = [];
+  if (existsSync(lockPath)) {
+    const lock = JSON.parse(readFileSync(lockPath, 'utf8'));
+    for (const [path, entry] of Object.entries(lock.packages ?? {})) {
+      const name = path.replace(/^node_modules\//, '');
+      if (!tarballFor.has(name)) continue;
+      const resolved = (entry.resolved ?? '').replace(/^file:/, '');
+      if (!resolve(workDir, decodeURIComponent(resolved)).startsWith(artifactDir)) {
+        strayResolutions.push(`${name} <- ${entry.resolved ?? 'unrecorded'}`);
+      }
+    }
+    const covered = Object.keys(lock.packages ?? {}).filter(path =>
+      tarballFor.has(path.replace(/^node_modules\//, ''))
+    ).length;
+    console.log(
+      `\nInstalled ${covered} distribution packages; ` +
+        `${strayResolutions.length} resolved from outside ${artifactDir}`
+    );
+    results.push([
+      'Packages resolved from the artifacts',
+      strayResolutions.length === 0 && covered > 0
+        ? 'PASS'
+        : `FAIL (${strayResolutions.slice(0, 5).join(', ') || 'none installed'})`,
+    ]);
+  } else {
+    results.push(['Packages resolved from the artifacts', 'SKIP (no npm lock written)']);
+  }
+
+  // Link the upstream specifiers to the installed distribution packages, so an
+  // application still on the original names resolves unchanged. An `npm:` alias
+  // would be the obvious way, but it resolves against the registry, where
+  // nothing is published.
+  if (aliased.length > 0) {
+    console.log('\nLinking the upstream names to the distribution packages');
+    for (const entry of aliased) {
+      const target = join(workDir, 'node_modules', entry.distribution);
+      const link = join(workDir, 'node_modules', entry.name);
+      if (!existsSync(target)) {
+        throw new Error(`Expected ${entry.distribution} to be installed at ${target}`);
+      }
+      mkdirSync(dirname(link), { recursive: true });
+      rmSync(link, { recursive: true, force: true });
+      symlinkSync(target, link, 'dir');
+      console.log(`  ${entry.name} -> ${entry.distribution}`);
+    }
+  }
+
   const scripts = workManifest.scripts ?? {};
   // Run what the application defines rather than a guessed command.
   const testScript = ['test', 'test:unit', 'test:ci', 'vitest', 'jest'].find(s => scripts[s]);
@@ -228,6 +304,36 @@ if (installed) {
 
   if (buildScript) step(`Production build (${buildScript})`, packageManager, ['run', buildScript]);
   else results.push(['Production build', 'SKIP (no build script found)']);
+
+  // Yjs breaks `instanceof` across duplicate copies, and 21 distribution
+  // packages declare it as a regular dependency rather than a peer, so a
+  // consumer whose own range does not overlap gets a second one. Reported
+  // rather than asserted: it is a property of the consumer's graph, and the
+  // decision about those manifests is not this script's to make.
+  try {
+    const listed = execFileSync('npm', ['ls', 'yjs', '--all', '--json'], {
+      cwd: workDir,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    const versions = new Set();
+    const walk = node => {
+      for (const [name, child] of Object.entries(node.dependencies ?? {})) {
+        if (name === 'yjs' && child.version) versions.add(child.version);
+        walk(child);
+      }
+    };
+    walk(JSON.parse(listed));
+    console.log(
+      `\nyjs copies in the installed graph: ${versions.size || 'none'}` +
+        (versions.size > 0 ? ` (${[...versions].join(', ')})` : '') +
+        (versions.size > 1
+          ? ' — more than one breaks Yjs constructor checks (informational)'
+          : '')
+    );
+  } catch {
+    console.log('\nCould not enumerate yjs copies (informational)');
+  }
 }
 
 console.log('\n=== Result ===');

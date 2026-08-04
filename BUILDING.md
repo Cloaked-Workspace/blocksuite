@@ -148,6 +148,38 @@ Its source is type-only imports, so it compiles to binding-free imports and the
 package stays `sideEffects: false`. Element registration comes from the view
 extensions, which call each block's `effects()` during setup.
 
+### Downstream application proof
+
+```sh
+BLOCKSUITE_ARTIFACT_DIR=/private/tmp/cw-blocksuite-artifacts \
+  node scripts/verify-cw-app.mjs --app /path/to/the/application
+```
+
+The proof above uses an application this repository wrote, so it can share the
+distribution's blind spots — the mandatory React edge survived
+`verify-consumer.mjs` for exactly that reason. This command runs a real
+consumer's own test suite and production build instead. It copies the checkout
+to a disposable directory, so the working tree is never modified, and `--app`
+accepts either the application or a repository root containing `web/` or `app/`.
+
+It handles a consumer under either naming model, decided from the artifact
+inventory and the name mapping rather than a hardcoded prefix: distribution
+names are redirected to their tarballs directly, and upstream `@blocksuite/*`
+names are additionally linked into `node_modules`, because an `npm:` alias would
+resolve against the registry where nothing is published. Local `file:` and
+`link:` siblings travel with the copy and are installed.
+
+Two things it reports beyond pass or fail:
+
+- **Packages resolved from the artifacts.** The claim is that the application
+  ran against these tarballs, so this asserts it from npm's own
+  `node_modules/.package-lock.json` rather than trusting the rewrite. A package
+  resolved from anywhere else fails the run.
+- **yjs copies in the installed graph.** Yjs breaks `instanceof` across
+  duplicates, and 21 distribution packages declare it as a regular dependency
+  rather than a peer, so a consumer whose own range does not overlap gets a
+  second copy. Reported, not asserted: it is a property of the consumer's graph.
+
 ### Comparing two builds
 
 `inventory.json` records two kinds of hash per package, and they answer
