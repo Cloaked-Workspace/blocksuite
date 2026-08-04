@@ -70,6 +70,23 @@ Packing invokes the npm CLI bundled with the running Node.js binary rather
 than an arbitrary `npm` from `PATH`. The recorded npm version is therefore
 part of the exact-byte artifact provenance.
 
+The builder refuses to run on a Node outside `engines.node`. It records the
+running version in `inventory.json` as provenance, and that record is only worth
+having if the pin is asserted rather than assumed — Yarn Berry does not enforce
+engines, so nothing else checks it. To build off-pin deliberately, which is how
+cross-runtime reproduction evidence gets produced:
+
+```sh
+BLOCKSUITE_ALLOW_UNPINNED_NODE=1 \
+  BLOCKSUITE_ARTIFACT_DIR=/private/tmp/cw-blocksuite-artifacts \
+  yarn build:packages
+```
+
+The waiver is logged, and `inventory.json` records `nodePinHonored: false`
+alongside the range that was missed. Artifacts built off-pin are usable
+evidence of reproducibility; they are not evidence that the pinned environment
+produces them.
+
 No package script is executed by `npm pack`, and this command does not publish.
 
 ### Consumer proof

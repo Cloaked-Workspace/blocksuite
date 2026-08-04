@@ -126,6 +126,72 @@ const npmVersion = run(process.execPath, [npmCli, '--version'], {
   capture: true,
 }).trim();
 
+// `inventory.json` records the Node that produced the artifacts, and that record
+// is provenance rather than trivia. Nothing was checking it: `.nvmrc` and
+// `engines.node` both pin 22.23.1, Yarn Berry does not enforce engines, and a
+// build on Node 20 was written into the inventory as though it were in spec.
+//
+// Refusing outright would be wrong, though. Running the builder on other
+// runtimes is how the cross-platform reproduction evidence in
+// PUBLICATION_READINESS.md gets produced, and one such run — Node 20.18.2 with
+// npm 11.12.1 on macOS — agreed with Node 22.22.2 and 22.23.1 to the byte. So
+// the pin is asserted by default and can be waived deliberately, and the
+// inventory records which of the two happened.
+const parseVersion = value =>
+  value
+    .replace(/^v/, '')
+    .split('.')
+    .map(Number);
+const compareVersions = (left, right) => {
+  const a = parseVersion(left);
+  const b = parseVersion(right);
+  for (let i = 0; i < 3; i++) {
+    if ((a[i] ?? 0) !== (b[i] ?? 0)) return (a[i] ?? 0) < (b[i] ?? 0) ? -1 : 1;
+  }
+  return 0;
+};
+const engineRange = JSON.parse(
+  readFileSync(join(root, 'package.json'), 'utf8')
+).engines.node;
+const satisfiesEngine = version =>
+  engineRange
+    .split(/\s+/)
+    .filter(Boolean)
+    .every(clause => {
+      const [, operator, bound] = clause.match(/^(>=|<=|>|<|=)?(.+)$/);
+      const order = compareVersions(version, bound);
+      switch (operator) {
+        case '>=':
+          return order >= 0;
+        case '<=':
+          return order <= 0;
+        case '>':
+          return order > 0;
+        case '<':
+          return order < 0;
+        default:
+          return order === 0;
+      }
+    });
+
+const nodePinHonored = satisfiesEngine(process.version);
+const waiveNodePin = process.env.BLOCKSUITE_ALLOW_UNPINNED_NODE === '1';
+if (!nodePinHonored && !waiveNodePin) {
+  throw new Error(
+    `Node ${process.version} does not satisfy the pinned range "${engineRange}". ` +
+      'Artifacts built here would be recorded in inventory.json as provenance, so ' +
+      'the pin is asserted rather than assumed. Switch to the pinned Node, or set ' +
+      'BLOCKSUITE_ALLOW_UNPINNED_NODE=1 to build deliberately off-pin — the ' +
+      'inventory will record that the pin was waived.'
+  );
+}
+if (!nodePinHonored) {
+  console.log(
+    `Node pin waived: building on ${process.version}, outside "${engineRange}". ` +
+      'inventory.json will record nodePinHonored: false.'
+  );
+}
+
 console.log(
   `Building ${packageNames.length} CW graph workspaces for ${distributionScope} at ${distributionVersion}`
 );
@@ -570,6 +636,8 @@ writeFileSync(
       patchedSubtreeSha,
       verifiedSourceTreeSha: sourceTreeSha,
       node: process.version,
+      nodeEngineRange: engineRange,
+      nodePinHonored,
       yarn: '4.13.0',
       npm: npmVersion,
       packageNameMappingSha256: createHash('sha256')

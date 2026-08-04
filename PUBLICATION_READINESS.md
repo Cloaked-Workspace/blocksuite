@@ -106,12 +106,30 @@ source change rather than a manifest correction — the fork patch dropping the
 React icon re-export, which also adds the export entry that took the mapped
 count from 438 to 439.
 
-The current value is reproduced across platforms: a forced Linux rebuild, the
-Linux CI runner on Node 22.23.1 with npm 10.9.8, and an owner rebuild on macOS.
-The macOS run was incremental rather than forced — TypeScript reused `dist` for
-every project the patch did not invalidate — so it is weaker evidence than the
-forced runs on its own, and it is reported that way. It still agreed to the
-byte.
+The current value is reproduced across platforms and across Node major versions:
+
+| Run | Platform | Node | npm | Pin honored |
+|---|---|---|---|---|
+| Forced rebuild | Linux | 22.22.2 | 10.9.7 | no |
+| CI | Linux | 22.23.1 | 10.9.8 | yes |
+| Owner rebuild | macOS | 20.18.2 | 11.12.1 | no |
+
+All three agreed to the byte, which is the strongest determinism evidence this
+record carries: three Node majors and two platforms produce identical published
+content.
+
+Two qualifications belong with it. The macOS run was incremental rather than
+forced — TypeScript reused `dist` for every project the patch did not
+invalidate — so on its own it is weaker than a forced rebuild. And only the CI
+run was inside `engines.node`; the other two were below the pinned 22.23.1 and
+nothing objected, because nothing was checking. The builder now asserts the
+range and records `nodePinHonored`, so a future off-pin build is a deliberate,
+labelled act rather than an unnoticed one. The rows above are labelled
+retroactively from their recorded versions.
+
+What this does not establish is that the pinned environment produces the digest.
+Only the CI run speaks to that. A forced rebuild on 22.23.1 outside CI is the
+cheapest way to close the gap.
 
 That the same macOS checkout produced `506485c9…` before pulling the patch, the
 exact value the pre-patch Linux build produced, is a second cross-platform
