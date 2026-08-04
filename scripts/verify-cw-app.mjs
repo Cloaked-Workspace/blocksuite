@@ -16,6 +16,7 @@
 import { execFileSync } from 'node:child_process';
 import {
   cpSync,
+  readdirSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -149,27 +150,63 @@ const copyTree = (from, to) => {
 console.log(`\nCopying the application to ${workDir}`);
 copyTree(appDir, workDir);
 
-// Local sibling packages — a workspace the tests import, say — are declared with
-// `file:` or `link:` specs pointing outside the application. They have to travel
-// with it, or the copy cannot install.
+// Sibling directories the application reaches outside its own tree have to
+// travel with it, or the copy cannot install or run. They arrive two ways, and
+// only handling the declared one is not enough: the real consumer's tests import
+// a sibling workspace by relative path without declaring it as a dependency at
+// all. The copy keeps each sibling at the same position relative to the
+// application, so those relative imports resolve unchanged.
 const workManifest = JSON.parse(readFileSync(join(workDir, 'package.json'), 'utf8'));
-const siblings = [];
+const siblings = new Map();
+const adoptSibling = target => {
+  const name = basename(target);
+  if (siblings.has(name)) return siblings.get(name);
+  const copied = join(projectDir, name);
+  console.log(`Copying the ${name} sibling to ${copied}`);
+  copyTree(target, copied);
+  const record = { name, dir: copied };
+  siblings.set(name, record);
+  return record;
+};
+const escapesApp = target => relative(appDir, target).startsWith('..');
+
+// Declared as `file:` or `link:` dependencies.
 for (const field of dependencyFields) {
   for (const [name, spec] of Object.entries(workManifest[field] ?? {})) {
     const match = typeof spec === 'string' && spec.match(/^(file:|link:)(.+)$/);
     if (!match) continue;
     const target = resolve(appDir, match[2]);
-    if (existsSync(join(target, 'package.json')) && relative(appDir, target).startsWith('..')) {
-      const copied = join(projectDir, basename(target));
-      if (!existsSync(copied)) {
-        console.log(`Copying the ${basename(target)} local dependency to ${copied}`);
-        copyTree(target, copied);
-        siblings.push({ name: basename(target), dir: copied });
-      }
-      workManifest[field][name] = `${match[1]}${
-        isAbsolute(match[2]) ? copied : relative(workDir, copied)
-      }`;
-    }
+    if (!existsSync(join(target, 'package.json')) || !escapesApp(target)) continue;
+    const record = adoptSibling(target);
+    workManifest[field][name] = `${match[1]}${
+      isAbsolute(match[2]) ? record.dir : relative(workDir, record.dir)
+    }`;
+  }
+}
+
+// Imported by relative path from the application's own sources. Undeclared, so
+// nothing in the manifest points at them.
+const sourcePattern = /\.(m|c)?[jt]sx?$/;
+const specifierPattern = /(?:from|import|require)\s*\(?\s*['"](\.\.\/[^'"]+)['"]/g;
+const walkSources = (dir, output = []) => {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (skipDirectories.includes(entry.name)) continue;
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) walkSources(path, output);
+    else if (sourcePattern.test(entry.name)) output.push(path);
+  }
+  return output;
+};
+for (const path of walkSources(appDir)) {
+  const source = readFileSync(path, 'utf8');
+  for (const [, specifier] of source.matchAll(specifierPattern)) {
+    const target = resolve(dirname(path), specifier);
+    if (!escapesApp(target)) continue;
+    // Take the directory that sits beside the application, not the file itself.
+    const outside = relative(dirname(appDir), target).split('/')[0];
+    if (!outside || outside.startsWith('..')) continue;
+    const sibling = join(dirname(appDir), outside);
+    if (existsSync(sibling)) adoptSibling(sibling);
   }
 }
 
@@ -230,11 +267,24 @@ const installed = step('Install against the distribution', packageManager, insta
 
 // A sibling with its own lockfile installs its own graph; the application's
 // install does not do it for it.
-for (const sibling of siblings) {
-  if (!existsSync(join(sibling.dir, 'package.json'))) continue;
+const installedSiblings = [];
+for (const sibling of siblings.values()) {
+  const manifestPath = join(sibling.dir, 'package.json');
+  if (!existsSync(manifestPath)) continue;
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+  // Only install a sibling that needs its own graph. Installing one that does
+  // not gives it an empty `node_modules` for nothing, and installing one that
+  // does gives it a private copy of every shared dependency — which is how a
+  // harness invents a duplicate the real application does not have. The yjs
+  // count below is reported with that in mind.
+  if (Object.keys(manifest.dependencies ?? {}).length === 0) {
+    console.log(`\nSkipping the ${sibling.name} sibling install: it declares no dependencies`);
+    continue;
+  }
   const hasLock = existsSync(join(sibling.dir, 'package-lock.json'));
+  installedSiblings.push(sibling.name);
   step(
-    `Install the ${sibling.name} local dependency`,
+    `Install the ${sibling.name} sibling`,
     'npm',
     [hasLock ? 'ci' : 'install', '--ignore-scripts', '--no-audit', '--no-fund'],
     { cwd: sibling.dir }
@@ -325,10 +375,15 @@ if (installed) {
     };
     walk(JSON.parse(listed));
     console.log(
-      `\nyjs copies in the installed graph: ${versions.size || 'none'}` +
+      `\nyjs copies in the application graph: ${versions.size || 'none'}` +
         (versions.size > 0 ? ` (${[...versions].join(', ')})` : '') +
         (versions.size > 1
           ? ' — more than one breaks Yjs constructor checks (informational)'
+          : '') +
+        (installedSiblings.length > 0
+          ? `\nNote: ${installedSiblings.join(', ')} installed separately and may hold ` +
+            'further copies this count does not see. A duplicate reached that way is ' +
+            'this harness, not the distribution.'
           : '')
     );
   } catch {
