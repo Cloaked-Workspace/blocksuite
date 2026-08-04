@@ -627,6 +627,130 @@ if (
   );
 }
 
+// A CycloneDX bill of materials for the distribution, written next to the
+// tarballs. It is a release gate in its own right, and it is also the thing a
+// consumer's scanner reads, so it is generated from what was actually staged
+// rather than from a manifest anyone could have edited afterwards.
+//
+// It is deterministic on purpose. No timestamp is emitted, and the serial number
+// is derived from the published-content digest rather than randomised, so two
+// builds of the same content produce byte-identical documents — the same
+// property `inventoryContentSha256` exists to give the tarballs. A random serial
+// number would silently destroy that.
+const purlFor = (name, version) =>
+  `pkg:npm/${name.replace('@', '%40').replace('/', '/')}@${version}`;
+const serialFrom = digest =>
+  'urn:uuid:' +
+  [
+    digest.slice(0, 8),
+    digest.slice(8, 12),
+    `5${digest.slice(13, 16)}`,
+    ((parseInt(digest.slice(16, 17), 16) & 0x3) | 0x8).toString(16) + digest.slice(17, 20),
+    digest.slice(20, 32),
+  ].join('-');
+
+const stagedManifests = new Map(
+  packageNames.map(name => [
+    name,
+    JSON.parse(readFileSync(join(packageRootFor(name), 'package.json'), 'utf8')),
+  ])
+);
+const distributionNameSet = new Set(inventory.map(entry => entry.name));
+
+// External requirements are recorded as declared ranges, not resolved versions.
+// Nothing is installed at this point, and what a range resolves to is a property
+// of the consumer's lockfile rather than of this distribution. Recording a
+// resolved version here would be inventing one.
+const externalRequirements = new Map();
+const components = [];
+const dependencyGraph = [];
+for (const entry of inventory) {
+  const manifest = stagedManifests.get(entry.sourceName);
+  const dependsOn = [];
+  for (const field of ['dependencies', 'peerDependencies', 'optionalDependencies']) {
+    for (const [dependency, range] of Object.entries(manifest[field] ?? {})) {
+      if (distributionNameSet.has(dependency)) {
+        dependsOn.push(purlFor(dependency, distributionVersion));
+        continue;
+      }
+      const known = externalRequirements.get(dependency) ?? new Set();
+      known.add(range);
+      externalRequirements.set(dependency, known);
+      dependsOn.push(`pkg:npm/${dependency.replace('@', '%40')}`);
+    }
+  }
+  const purl = purlFor(entry.name, entry.version);
+  components.push({
+    type: 'library',
+    'bom-ref': purl,
+    name: entry.name,
+    version: entry.version,
+    description: manifest.description,
+    licenses: manifest.license ? [{ license: { id: manifest.license } }] : undefined,
+    purl,
+    hashes: [
+      { alg: 'SHA-256', content: entry.archiveSha256 },
+    ],
+    properties: [
+      { name: 'cw:upstreamName', value: entry.sourceName },
+      { name: 'cw:publishedContentSha256', value: entry.contentSha256 },
+      { name: 'cw:archiveFilename', value: entry.filename },
+      { name: 'cw:publishedFileCount', value: String(entry.files) },
+    ],
+  });
+  dependencyGraph.push({ ref: purl, dependsOn: [...new Set(dependsOn)].sort() });
+}
+for (const [name, ranges] of [...externalRequirements].sort()) {
+  const ref = `pkg:npm/${name.replace('@', '%40')}`;
+  components.push({
+    type: 'library',
+    'bom-ref': ref,
+    name,
+    purl: ref,
+    scope: 'required',
+    properties: [
+      { name: 'cw:declaredRange', value: [...ranges].sort().join(' || ') },
+      {
+        name: 'cw:resolution',
+        value: 'unresolved: declared requirement, resolved by the consumer lockfile',
+      },
+    ],
+  });
+  dependencyGraph.push({ ref, dependsOn: [] });
+}
+
+const sbom = {
+  bomFormat: 'CycloneDX',
+  specVersion: '1.6',
+  serialNumber: serialFrom(inventoryContentSha256),
+  version: 1,
+  metadata: {
+    component: {
+      type: 'library',
+      'bom-ref': `pkg:generic/cloaked-workspace-blocksuite@${distributionVersion}`,
+      name: 'cloaked-workspace-blocksuite',
+      version: distributionVersion,
+      description:
+        'Cloaked Workspace BlockSuite distribution, staged from the patched AFFiNE subtree',
+    },
+    properties: [
+      { name: 'cw:sourceCommit', value: '00576e1e7842fb63095cdc5d7a236321957b550c' },
+      { name: 'cw:upstreamSubtreeSha', value: upstreamSubtreeSha },
+      { name: 'cw:patchedSubtreeSha', value: patchedSubtreeSha },
+      { name: 'cw:inventoryContentSha256', value: inventoryContentSha256 },
+      { name: 'cw:node', value: process.version },
+      { name: 'cw:nodePinHonored', value: String(nodePinHonored) },
+      { name: 'cw:npm', value: npmVersion },
+      { name: 'cw:yarn', value: '4.13.0' },
+    ],
+  },
+  components,
+  dependencies: dependencyGraph.sort((a, b) => (a.ref < b.ref ? -1 : 1)),
+};
+const sbomBytes = `${JSON.stringify(sbom, null, 2)}\n`;
+writeFileSync(join(artifactDir, 'sbom.cdx.json'), sbomBytes);
+const sbomSha256 = createHash('sha256').update(sbomBytes).digest('hex');
+
 writeFileSync(
   join(artifactDir, 'inventory.json'),
   `${JSON.stringify(
@@ -647,6 +771,8 @@ writeFileSync(
       distributionVersion,
       externalSourceScopeDependencies,
       inventoryContentSha256,
+      sbomFile: 'sbom.cdx.json',
+      sbomSha256,
       packagesWithDeclaredSideEffects: packagesWithSideEffects,
       declaredSideEffectFiles,
       buildInfoFilesRemoved: removedBuildInfoFiles,

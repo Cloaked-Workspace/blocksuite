@@ -284,7 +284,13 @@ vulnerability.
 - Approve package compatibility and versioning policy.
 - Configure npm Trusted Publishing independently for all packages, with no
   long-lived token.
-- Add provenance/SBOM generation and signature verification.
+- Add provenance/SBOM generation and signature verification. **SBOM done:**
+  `build:packages` emits a deterministic CycloneDX 1.6 `sbom.cdx.json` covering
+  all 70 packages with archive hashes, licences, upstream names and published
+  content digests, plus their external requirements as declared ranges;
+  `inventory.json` records its `sbomSha256`. Two builds produced byte-identical
+  documents. Signature verification and npm provenance attestations remain, and
+  both depend on publication being configured.
 - ~~Repeat the disposable CW proof from clean, published-shape artifacts.~~ Done:
   `scripts/verify-cw-app.mjs`, recorded under "The real consumer". Not yet run in
   CI, which would need the application available to the workflow.
