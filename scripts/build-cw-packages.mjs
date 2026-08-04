@@ -126,6 +126,72 @@ const npmVersion = run(process.execPath, [npmCli, '--version'], {
   capture: true,
 }).trim();
 
+// `inventory.json` records the Node that produced the artifacts, and that record
+// is provenance rather than trivia. Nothing was checking it: `.nvmrc` and
+// `engines.node` both pin 22.23.1, Yarn Berry does not enforce engines, and a
+// build on Node 20 was written into the inventory as though it were in spec.
+//
+// Refusing outright would be wrong, though. Running the builder on other
+// runtimes is how the cross-platform reproduction evidence in
+// PUBLICATION_READINESS.md gets produced, and one such run — Node 20.18.2 with
+// npm 11.12.1 on macOS — agreed with Node 22.22.2 and 22.23.1 to the byte. So
+// the pin is asserted by default and can be waived deliberately, and the
+// inventory records which of the two happened.
+const parseVersion = value =>
+  value
+    .replace(/^v/, '')
+    .split('.')
+    .map(Number);
+const compareVersions = (left, right) => {
+  const a = parseVersion(left);
+  const b = parseVersion(right);
+  for (let i = 0; i < 3; i++) {
+    if ((a[i] ?? 0) !== (b[i] ?? 0)) return (a[i] ?? 0) < (b[i] ?? 0) ? -1 : 1;
+  }
+  return 0;
+};
+const engineRange = JSON.parse(
+  readFileSync(join(root, 'package.json'), 'utf8')
+).engines.node;
+const satisfiesEngine = version =>
+  engineRange
+    .split(/\s+/)
+    .filter(Boolean)
+    .every(clause => {
+      const [, operator, bound] = clause.match(/^(>=|<=|>|<|=)?(.+)$/);
+      const order = compareVersions(version, bound);
+      switch (operator) {
+        case '>=':
+          return order >= 0;
+        case '<=':
+          return order <= 0;
+        case '>':
+          return order > 0;
+        case '<':
+          return order < 0;
+        default:
+          return order === 0;
+      }
+    });
+
+const nodePinHonored = satisfiesEngine(process.version);
+const waiveNodePin = process.env.BLOCKSUITE_ALLOW_UNPINNED_NODE === '1';
+if (!nodePinHonored && !waiveNodePin) {
+  throw new Error(
+    `Node ${process.version} does not satisfy the pinned range "${engineRange}". ` +
+      'Artifacts built here would be recorded in inventory.json as provenance, so ' +
+      'the pin is asserted rather than assumed. Switch to the pinned Node, or set ' +
+      'BLOCKSUITE_ALLOW_UNPINNED_NODE=1 to build deliberately off-pin — the ' +
+      'inventory will record that the pin was waived.'
+  );
+}
+if (!nodePinHonored) {
+  console.log(
+    `Node pin waived: building on ${process.version}, outside "${engineRange}". ` +
+      'inventory.json will record nodePinHonored: false.'
+  );
+}
+
 console.log(
   `Building ${packageNames.length} CW graph workspaces for ${distributionScope} at ${distributionVersion}`
 );
@@ -561,6 +627,143 @@ if (
   );
 }
 
+// A CycloneDX bill of materials for the distribution, written next to the
+// tarballs. It is a release gate in its own right, and it is also the thing a
+// consumer's scanner reads, so it is generated from what was actually staged
+// rather than from a manifest anyone could have edited afterwards.
+//
+// It is deterministic on purpose. No timestamp is emitted, and the serial number
+// is derived from the published-content digest rather than randomised, so two
+// builds of the same content produce byte-identical documents — the same
+// property `inventoryContentSha256` exists to give the tarballs. A random serial
+// number would silently destroy that.
+// purl writes an npm scope as `%40scope/name`. Building that with
+// `String.prototype.replace` and a string pattern rewrites only the first match
+// and leaves the separator alone, which happens to be right — a scoped npm name
+// carries exactly one `@` and one `/` — and is wrong as written. CodeQL flagged
+// it, correctly: an encoder should not depend on that coincidence holding.
+const npmPurl = (name, version) => {
+  const scoped = name.startsWith('@');
+  const [scope, bare] = scoped ? name.slice(1).split('/', 2) : [undefined, name];
+  const path = scoped
+    ? `%40${encodeURIComponent(scope)}/${encodeURIComponent(bare)}`
+    : encodeURIComponent(name);
+  return version === undefined
+    ? `pkg:npm/${path}`
+    : `pkg:npm/${path}@${encodeURIComponent(version)}`;
+};
+const serialFrom = digest =>
+  'urn:uuid:' +
+  [
+    digest.slice(0, 8),
+    digest.slice(8, 12),
+    `5${digest.slice(13, 16)}`,
+    ((parseInt(digest.slice(16, 17), 16) & 0x3) | 0x8).toString(16) + digest.slice(17, 20),
+    digest.slice(20, 32),
+  ].join('-');
+
+const stagedManifests = new Map(
+  packageNames.map(name => [
+    name,
+    JSON.parse(readFileSync(join(packageRootFor(name), 'package.json'), 'utf8')),
+  ])
+);
+const distributionNameSet = new Set(inventory.map(entry => entry.name));
+
+// External requirements are recorded as declared ranges, not resolved versions.
+// Nothing is installed at this point, and what a range resolves to is a property
+// of the consumer's lockfile rather than of this distribution. Recording a
+// resolved version here would be inventing one.
+const externalRequirements = new Map();
+const components = [];
+const dependencyGraph = [];
+for (const entry of inventory) {
+  const manifest = stagedManifests.get(entry.sourceName);
+  const dependsOn = [];
+  for (const field of ['dependencies', 'peerDependencies', 'optionalDependencies']) {
+    for (const [dependency, range] of Object.entries(manifest[field] ?? {})) {
+      if (distributionNameSet.has(dependency)) {
+        dependsOn.push(npmPurl(dependency, distributionVersion));
+        continue;
+      }
+      const known = externalRequirements.get(dependency) ?? new Set();
+      known.add(range);
+      externalRequirements.set(dependency, known);
+      dependsOn.push(npmPurl(dependency));
+    }
+  }
+  const purl = npmPurl(entry.name, entry.version);
+  components.push({
+    type: 'library',
+    'bom-ref': purl,
+    name: entry.name,
+    version: entry.version,
+    description: manifest.description,
+    licenses: manifest.license ? [{ license: { id: manifest.license } }] : undefined,
+    purl,
+    hashes: [
+      { alg: 'SHA-256', content: entry.archiveSha256 },
+    ],
+    properties: [
+      { name: 'cw:upstreamName', value: entry.sourceName },
+      { name: 'cw:publishedContentSha256', value: entry.contentSha256 },
+      { name: 'cw:archiveFilename', value: entry.filename },
+      { name: 'cw:publishedFileCount', value: String(entry.files) },
+    ],
+  });
+  dependencyGraph.push({ ref: purl, dependsOn: [...new Set(dependsOn)].sort() });
+}
+for (const [name, ranges] of [...externalRequirements].sort()) {
+  const ref = npmPurl(name);
+  components.push({
+    type: 'library',
+    'bom-ref': ref,
+    name,
+    purl: ref,
+    scope: 'required',
+    properties: [
+      { name: 'cw:declaredRange', value: [...ranges].sort().join(' || ') },
+      {
+        name: 'cw:resolution',
+        value: 'unresolved: declared requirement, resolved by the consumer lockfile',
+      },
+    ],
+  });
+  dependencyGraph.push({ ref, dependsOn: [] });
+}
+
+const sbom = {
+  bomFormat: 'CycloneDX',
+  specVersion: '1.6',
+  serialNumber: serialFrom(inventoryContentSha256),
+  version: 1,
+  metadata: {
+    component: {
+      type: 'library',
+      'bom-ref': `pkg:generic/cloaked-workspace-blocksuite@${distributionVersion}`,
+      name: 'cloaked-workspace-blocksuite',
+      version: distributionVersion,
+      description:
+        'Cloaked Workspace BlockSuite distribution, staged from the patched AFFiNE subtree',
+    },
+    properties: [
+      { name: 'cw:sourceCommit', value: '00576e1e7842fb63095cdc5d7a236321957b550c' },
+      { name: 'cw:upstreamSubtreeSha', value: upstreamSubtreeSha },
+      { name: 'cw:patchedSubtreeSha', value: patchedSubtreeSha },
+      { name: 'cw:inventoryContentSha256', value: inventoryContentSha256 },
+      { name: 'cw:node', value: process.version },
+      { name: 'cw:nodePinHonored', value: String(nodePinHonored) },
+      { name: 'cw:npm', value: npmVersion },
+      { name: 'cw:yarn', value: '4.13.0' },
+    ],
+  },
+  components,
+  dependencies: dependencyGraph.sort((a, b) => (a.ref < b.ref ? -1 : 1)),
+};
+const sbomBytes = `${JSON.stringify(sbom, null, 2)}\n`;
+writeFileSync(join(artifactDir, 'sbom.cdx.json'), sbomBytes);
+const sbomSha256 = createHash('sha256').update(sbomBytes).digest('hex');
+
 writeFileSync(
   join(artifactDir, 'inventory.json'),
   `${JSON.stringify(
@@ -570,6 +773,8 @@ writeFileSync(
       patchedSubtreeSha,
       verifiedSourceTreeSha: sourceTreeSha,
       node: process.version,
+      nodeEngineRange: engineRange,
+      nodePinHonored,
       yarn: '4.13.0',
       npm: npmVersion,
       packageNameMappingSha256: createHash('sha256')
@@ -579,6 +784,8 @@ writeFileSync(
       distributionVersion,
       externalSourceScopeDependencies,
       inventoryContentSha256,
+      sbomFile: 'sbom.cdx.json',
+      sbomSha256,
       packagesWithDeclaredSideEffects: packagesWithSideEffects,
       declaredSideEffectFiles,
       buildInfoFilesRemoved: removedBuildInfoFiles,
