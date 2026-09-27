@@ -104,9 +104,41 @@ missing file, then replacing the blanket `sideEffects: false` with the actual
 list of effect-bearing files. The third time is the first move caused by a
 source change rather than a manifest correction — the fork patch dropping the
 React icon re-export, which also adds the export entry that took the mapped
-count from 438 to 439. The cross-platform claim therefore belongs to the
-earliest value; the current one has so far been reproduced by one forced local
-rebuild on Linux, and CI confirms it on each push.
+count from 438 to 439.
+
+The current value is reproduced across platforms and across Node major versions:
+
+| Run | Platform | Node | npm | Pin honored |
+|---|---|---|---|---|
+| Forced rebuild | Linux | 22.22.2 | 10.9.7 | no |
+| CI | Linux | 22.23.1 | 10.9.8 | yes |
+| Owner rebuild | macOS | 20.18.2 | 11.12.1 | no |
+
+All three agreed to the byte, which is the strongest determinism evidence this
+record carries: three Node majors and two platforms produce identical published
+content.
+
+Two qualifications belong with it. The macOS run was incremental rather than
+forced — TypeScript reused `dist` for every project the patch did not
+invalidate — so on its own it is weaker than a forced rebuild. And only the CI
+run was inside `engines.node`; the other two were below the pinned 22.23.1 and
+nothing objected, because nothing was checking. The builder now asserts the
+range and records `nodePinHonored`, so a future off-pin build is a deliberate,
+labelled act rather than an unnoticed one. The rows above are labelled
+retroactively from their recorded versions.
+
+What this does not establish is that the pinned environment produces the digest.
+Only the CI run speaks to that. A forced rebuild on 22.23.1 outside CI is the
+cheapest way to close the gap.
+
+That the same macOS checkout produced `506485c9…` before pulling the patch, the
+exact value the pre-patch Linux build produced, is a second cross-platform
+agreement rather than a coincidence worth ignoring. It also shows the guard
+working as intended in the mundane case: the builder verified a stale tree
+against a stale pin and built successfully, because both were consistently old.
+Nothing detected the staleness except the printed export count and digest.
+A reviewer comparing a build against this record should check those two lines
+before anything else.
 
 An earlier claim in this record, that a comparison build resolving npm 11 from
 `PATH` produced different gzip bytes, does not reproduce against npm 11.12.1.
@@ -135,6 +167,10 @@ original scope. It is consumed from upstream and is not renamed or republished.
   built only from published packages mounts an editor, registers its custom
   elements, renders the document, accepts typed input into the block model, and
   re-renders on a model mutation.
+- Real consumer proof, `scripts/verify-cw-app.mjs`: PASS. The CW application's
+  own suite runs 23/23 and its Next.js 16.2.12 production build succeeds against
+  the staged artifacts, with every distribution package asserted to have
+  resolved from them. See "The real consumer" below.
 
 The application proof was added because the consumer proof stops one step short
 of the question. It links the packages and measures the bundle, which shows the
@@ -171,16 +207,45 @@ throws without, and a container built on `BlockStdScope`. Neither is a defect �
 AFFiNE supplies its own — but neither was documented, and an application cannot
 be assembled without knowing them. `BUILDING.md` now records all three.
 
-The consumer proof is now a script in this repository and a step in CI. It
-previously existed only as the three claims below, recorded from a manual run
-that nothing could repeat:
+## The real consumer
 
-- Disposable CW tests: PASS, 16/16.
-- Disposable CW Next.js 16.2.12 production build: PASS.
+This record carried two claims for a long time that nothing could repeat, from a
+manual run against the CW application: tests 16/16, and a passing Next.js
+16.2.12 production build. They are now superseded rather than retained.
 
-Those two are retained as history rather than evidence. Neither is reproducible
-from this repository, and the CW project they ran against is not part of it.
-Automating an equivalent against the real consumer is the remaining work.
+`scripts/verify-cw-app.mjs` runs the real consumer against staged artifacts. On
+macOS, Node 20.18.2 with npm 11.12.1, against artifacts whose content digest is
+`4b7a0f7f105c66eb87ae63cee742a6d52b55f1f1acf5f30225209c85eb9b2c24`:
+
+- 70 of 70 distribution packages declared by the application, all under the
+  distribution names.
+- Install: PASS, 860 packages.
+- **Every distribution package resolved from the artifact directory**, asserted
+  from npm's `node_modules/.package-lock.json` rather than inferred.
+- Test suite: PASS, 23/23.
+- Next.js 16.2.12 production build: PASS, 26 routes.
+
+The middle line is what makes the other two mean anything. The application
+already declares the distribution names, so a harness that installed whatever it
+normally installs would produce an identical-looking PASS having tested nothing.
+An earlier run did exactly that shape of thing and could not be distinguished
+from a real one until the assertion existed. The check was confirmed non-vacuous
+against a deliberately wrong artifact directory: 70 of 70 flagged.
+
+The suite is 23 tests, not the 16 this record claimed; it grew. Four of them
+independently verify findings recorded above — that no React reaches the editor
+bundle, that the editor's imports register the custom elements, that the
+Vanilla Extract styles survive tree shaking, and that a content digest matches.
+The consumer testing the same properties from the outside is worth more than
+this repository testing them from the inside.
+
+Two things the run surfaced without failing. The application's Node, 20.18.2, is
+below what one of its lint dependencies asks for, which npm reports and nothing
+enforces. And `ydocs`, a sibling the tests reach by relative path, installs its
+own dependency graph, which is where "Yjs was already imported" comes from: the
+application graph itself holds exactly one yjs. That warning is therefore not
+evidence for the yjs concern recorded below, and the concern is not evidence
+for the warning. They are separate.
 
 Writing the script immediately surfaced two things the manual claims had not.
 `@blocksuite/global` shipped a `types` field pointing at a file that does not
@@ -219,6 +284,19 @@ vulnerability.
 - Approve package compatibility and versioning policy.
 - Configure npm Trusted Publishing independently for all packages, with no
   long-lived token.
-- Add provenance/SBOM generation and signature verification.
-- Repeat the disposable CW proof from clean, published-shape artifacts.
+- Add provenance/SBOM generation and signature verification. **SBOM done:**
+  `build:packages` emits a deterministic CycloneDX 1.6 `sbom.cdx.json` covering
+  all 70 packages with archive hashes, licences, upstream names and published
+  content digests, plus their external requirements as declared ranges;
+  `inventory.json` records its `sbomSha256`. Two builds produced byte-identical
+  documents. Signature verification and npm provenance attestations remain, and
+  both depend on publication being configured.
+- ~~Repeat the disposable CW proof from clean, published-shape artifacts.~~ Done:
+  `scripts/verify-cw-app.mjs`, recorded under "The real consumer". Not yet run in
+  CI, which would need the application available to the workflow.
+- Decide whether `yjs` should be a peer dependency of the 21 packages that
+  declare it as a regular one. Duplicate copies break Yjs constructor checks, and
+  a monorepo hides the risk by hoisting to one copy. No duplicate has been
+  observed inside a consumer's own graph, so this is a latent hazard rather than
+  a defect, and closing it means patching 21 upstream manifests.
 - Approve and test an archival immutable GitHub Release process separately.

@@ -70,7 +70,52 @@ Packing invokes the npm CLI bundled with the running Node.js binary rather
 than an arbitrary `npm` from `PATH`. The recorded npm version is therefore
 part of the exact-byte artifact provenance.
 
+The builder refuses to run on a Node outside `engines.node`. It records the
+running version in `inventory.json` as provenance, and that record is only worth
+having if the pin is asserted rather than assumed — Yarn Berry does not enforce
+engines, so nothing else checks it. To build off-pin deliberately, which is how
+cross-runtime reproduction evidence gets produced:
+
+```sh
+BLOCKSUITE_ALLOW_UNPINNED_NODE=1 \
+  BLOCKSUITE_ARTIFACT_DIR=/private/tmp/cw-blocksuite-artifacts \
+  yarn build:packages
+```
+
+The waiver is logged, and `inventory.json` records `nodePinHonored: false`
+alongside the range that was missed. Artifacts built off-pin are usable
+evidence of reproducibility; they are not evidence that the pinned environment
+produces them.
+
 No package script is executed by `npm pack`, and this command does not publish.
+
+### Bill of materials
+
+`build:packages` writes `sbom.cdx.json` beside the tarballs: a CycloneDX 1.6
+document generated from the staged tree rather than from a manifest that could
+have been edited afterwards. `inventory.json` records its SHA-256 as
+`sbomSha256`.
+
+It carries 140 components. The 70 owned packages have concrete versions, SHA-256
+hashes of their archives, licences, their upstream names, and their published
+content digests. Their external requirements appear as components without a
+version, because nothing is installed at this point — what a range resolves to is
+a property of the consumer's lockfile, not of this distribution, and inventing a
+resolved version would be worse than declaring none. Each carries its declared
+range in `cw:declaredRange`.
+
+The document is deterministic: no timestamp is emitted, and the serial number is
+derived from `inventoryContentSha256` rather than randomised, so two builds of
+the same content produce byte-identical documents. A random serial number would
+quietly destroy that property, which is the same one the tarballs have.
+
+Reading it answers questions the manifests scatter. `yjs`, for instance, shows
+as `* || ^13.6.27` — the single peer declaration and the twenty-one regular ones
+side by side.
+
+This closes the SBOM half of the provenance gate. Signature verification and npm
+provenance attestations depend on publication being configured, and are not
+here.
 
 ### Consumer proof
 
@@ -130,6 +175,38 @@ Note also that `@cloaked-workspace/blocksuite-affine/effects` registers nothing.
 Its source is type-only imports, so it compiles to binding-free imports and the
 package stays `sideEffects: false`. Element registration comes from the view
 extensions, which call each block's `effects()` during setup.
+
+### Downstream application proof
+
+```sh
+BLOCKSUITE_ARTIFACT_DIR=/private/tmp/cw-blocksuite-artifacts \
+  node scripts/verify-cw-app.mjs --app /path/to/the/application
+```
+
+The proof above uses an application this repository wrote, so it can share the
+distribution's blind spots — the mandatory React edge survived
+`verify-consumer.mjs` for exactly that reason. This command runs a real
+consumer's own test suite and production build instead. It copies the checkout
+to a disposable directory, so the working tree is never modified, and `--app`
+accepts either the application or a repository root containing `web/` or `app/`.
+
+It handles a consumer under either naming model, decided from the artifact
+inventory and the name mapping rather than a hardcoded prefix: distribution
+names are redirected to their tarballs directly, and upstream `@blocksuite/*`
+names are additionally linked into `node_modules`, because an `npm:` alias would
+resolve against the registry where nothing is published. Local `file:` and
+`link:` siblings travel with the copy and are installed.
+
+Two things it reports beyond pass or fail:
+
+- **Packages resolved from the artifacts.** The claim is that the application
+  ran against these tarballs, so this asserts it from npm's own
+  `node_modules/.package-lock.json` rather than trusting the rewrite. A package
+  resolved from anywhere else fails the run.
+- **yjs copies in the installed graph.** Yjs breaks `instanceof` across
+  duplicates, and 21 distribution packages declare it as a regular dependency
+  rather than a peer, so a consumer whose own range does not overlap gets a
+  second copy. Reported, not asserted: it is a property of the consumer's graph.
 
 ### Comparing two builds
 
