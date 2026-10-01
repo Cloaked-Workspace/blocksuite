@@ -1,31 +1,31 @@
 {
   "schemaVersion": 1,
   "upstreamRepository": "https://github.com/toeverything/AFFiNE.git",
-  "sourceCommit": "00576e1e7842fb63095cdc5d7a236321957b550c",
+  "sourceCommit": "b4c8548c09da21b2898443559a5b846f0ccf5dd8",
   "sourceRefsObserved": [
-    "refs/heads/canary",
-    "refs/tags/v0.27.4-beta.0",
-    "refs/tags/v2026.7.29-canary.953"
+    "refs/tags/v0.27.4"
   ],
   "subtreePath": "blocksuite",
-  "subtreeSha": "d0e6e70bfa88943c79dd5608ff3556e9aafb1783",
+  "subtreeSha": "044535822a52dc3134ef70d994901828db35c1ac",
   "forkPatches": {
     "record": "provenance/FORK_PATCHES.md",
-    "patchedSubtreeSha": "0994a6d42d505b516cc4183be69f2084e5fdc839",
-    "fileCount": 7,
+    "patchedSubtreeSha": "42b6cdabcbc58cffd358d7dc129171fd9739f67d",
+    "fileCount": 10,
     "commits": [
-      "cf644440ab60b6d3f674ed57cfa88014f6b35429",
-      "1ac84f9b0d2480c017d13977800606d4f3b0467f",
-      "eb61b3443730cb97f61eff4a301084fbe2b30cd6"
+      "9d5fc7a2b395d68848af3cfd6d77238b27832653",
+      "7e5a6f433259d244c0da9db4ecbca011f60eea1b",
+      "f8ba0cb247d8023c8b6f3893ed25158641b64906",
+      "c2c50a59d948bf60ef1561731798def52e7f810e",
+      "28fb823b7b219780b0a8241e6a5d4aecb2fcfeb5"
     ]
   },
   "latestCommitAffectingSubtree": {
-    "commit": "b6fc0a2192cab6e4f9f8c2ba2d0f538c575e6b52",
-    "committedAt": "2026-07-28T13:02:38+08:00",
-    "subject": "fix(mobile): mobile keyboard padding (#15365)"
+    "commit": "6375f5ab8c389831327284f4795d8397de085153",
+    "committedAt": "2026-08-10T19:09:54Z",
+    "subject": "chore: bump typescript 7 (#15465)"
   },
   "importPath": "blocksuite",
-  "importedAt": "2026-07-29T13:51:29Z",
+  "importedAt": "2026-10-01T21:03:24Z",
   "licenses": [
     {
       "scope": "Upstream AFFiNE blocksuite subtree and public package manifests",
@@ -41,10 +41,15 @@
     "All AFFiNE repository content outside blocksuite/, except the two copied root license notices"
   ],
   "deterministicTransformations": [
-    "Extract AFFiNE tree 00576e1e7842fb63095cdc5d7a236321957b550c:blocksuite unchanged at blocksuite/",
+    "Extract AFFiNE tree b4c8548c09da21b2898443559a5b846f0ccf5dd8:blocksuite unchanged at blocksuite/",
     "Copy upstream root LICENSE to LICENSES/AFFINE-LICENSE outside the imported subtree",
     "Copy upstream root LICENSE-MIT to LICENSES/AFFINE-LICENSE-MIT outside the imported subtree",
     "Add this provenance record at provenance/AFFINE_BLOCKSUITE.json outside the imported subtree",
-    "Apply the fork patches recorded in provenance/FORK_PATCHES.md, producing subtree 0994a6d42d505b516cc4183be69f2084e5fdc839"
-  ]
+    "Apply the fork patches recorded in provenance/FORK_PATCHES.md, producing subtree 42b6cdabcbc58cffd358d7dc129171fd9739f67d"
+  ],
+  "previousImport": {
+    "sourceCommit": "00576e1e7842fb63095cdc5d7a236321957b550c",
+    "subtreeSha": "d0e6e70bfa88943c79dd5608ff3556e9aafb1783",
+    "patchedSubtreeSha": "00e032a0b60085f0db8ea30d5d8e4bbb70fc251c"
+  }
 }
