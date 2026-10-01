@@ -9,9 +9,11 @@ been published from this repository.
 
 ## Source and provenance
 
-`blocksuite/` is a byte-identical import of AFFiNE commit
-`00576e1e7842fb63095cdc5d7a236321957b550c`. Its Git tree SHA is
-`d0e6e70bfa88943c79dd5608ff3556e9aafb1783`.
+`blocksuite/` is imported byte-identical from AFFiNE `v0.27.4`, commit
+`b4c8548c09da21b2898443559a5b846f0ccf5dd8`. Its Git tree SHA is
+`044535822a52dc3134ef70d994901828db35c1ac`. The fork patches in
+[`provenance/FORK_PATCHES.md`](provenance/FORK_PATCHES.md) are applied on top,
+producing the built tree `42b6cdabcbc58cffd358d7dc129171fd9739f67d`.
 
 Fork-owned metadata is deliberately outside that tree:
 

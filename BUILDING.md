@@ -27,7 +27,11 @@ yarn build
 ```
 
 This builds the complete 70-project TypeScript reference graph from the
-byte-identical `blocksuite/` source.
+patched `blocksuite/` source with TypeScript 6.0.2. AFFiNE itself compiles with
+TypeScript 7's native `tsc`; 6.0.2 is the JavaScript release aligned with it and
+keeps the build free of platform-specific compiler binaries. The `assets` types
+that `blocksuite/tsconfig.json` names come from `tools/@types/assets`, copied
+verbatim from AFFiNE.
 
 ## Unit tests
 

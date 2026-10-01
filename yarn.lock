@@ -202,34 +202,34 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@atlaskit/pragmatic-drag-and-drop-auto-scroll@npm:^2.1.2":
-  version: 2.1.2
-  resolution: "@atlaskit/pragmatic-drag-and-drop-auto-scroll@npm:2.1.2"
+"@atlaskit/pragmatic-drag-and-drop-auto-scroll@npm:3.0.0":
+  version: 3.0.0
+  resolution: "@atlaskit/pragmatic-drag-and-drop-auto-scroll@npm:3.0.0"
   dependencies:
-    "@atlaskit/pragmatic-drag-and-drop": "npm:^1.7.0"
+    "@atlaskit/pragmatic-drag-and-drop": "npm:^2.0.0"
     "@babel/runtime": "npm:^7.0.0"
-  checksum: 10/037271d0d436cbfb6dfc053bea4f7cd724091e2046819d04df75286a09b802f2826d1a4e6c421f0131c9e96de259eb55dd9795aac193835139ea72f7140f3e9e
+  checksum: 10/9710d02b8c7769c0db001bd95ed2c45e9032d808838a6a24200d18c0a6f2acd5f544ec18146920ce906cf13ab1b7ce3a8130cfe82f30095c507431e276f8933e
   languageName: node
   linkType: hard
 
-"@atlaskit/pragmatic-drag-and-drop-hitbox@npm:^1.1.0":
-  version: 1.1.0
-  resolution: "@atlaskit/pragmatic-drag-and-drop-hitbox@npm:1.1.0"
+"@atlaskit/pragmatic-drag-and-drop-hitbox@npm:2.0.0":
+  version: 2.0.0
+  resolution: "@atlaskit/pragmatic-drag-and-drop-hitbox@npm:2.0.0"
   dependencies:
-    "@atlaskit/pragmatic-drag-and-drop": "npm:^1.6.0"
+    "@atlaskit/pragmatic-drag-and-drop": "npm:^2.0.0"
     "@babel/runtime": "npm:^7.0.0"
-  checksum: 10/47669b2d19eba8a3a7de787fa0d6ab8b171b7e7465249afe3ab28f5e522abacc2acf5e07e3661ce781ad9171ca08a2e0ce269413d18dfe0c5f3f858995d2b783
+  checksum: 10/6627299f1ff218237693bd5fb9cd278f19921a9510e04893aeee8fce8e97cbb0e3c3e72a0dcd8b7f7784b273c6de9c23fdef13937bc972e5d8e89073f3bd4aa2
   languageName: node
   linkType: hard
 
-"@atlaskit/pragmatic-drag-and-drop@npm:^1.6.0, @atlaskit/pragmatic-drag-and-drop@npm:^1.7.0, @atlaskit/pragmatic-drag-and-drop@npm:^1.7.7":
-  version: 1.8.1
-  resolution: "@atlaskit/pragmatic-drag-and-drop@npm:1.8.1"
+"@atlaskit/pragmatic-drag-and-drop@npm:^2.0.0":
+  version: 2.0.2
+  resolution: "@atlaskit/pragmatic-drag-and-drop@npm:2.0.2"
   dependencies:
     "@babel/runtime": "npm:^7.0.0"
     bind-event-listener: "npm:^3.0.0"
     raf-schd: "npm:^4.0.3"
-  checksum: 10/471e702884c70fde587cfc790a32be1923fabbbdc2499a6ac0ea0db304841333ad58231af29d0ae5bb90f765ec64438145d972ece12e9d8e8f91865d209fa7af
+  checksum: 10/486663d9c35fa26bb6e57602a398a98ae607e81df07b40691718304e3a05a21dabad144220f954d925aa1e9c903954ba5c0edad860118a0d7ed3195b3430cda2
   languageName: node
   linkType: hard
 
@@ -1744,7 +1744,7 @@ __metadata:
     "@types/js-yaml": "npm:^4.0.9"
     "@types/lodash-es": "npm:^4.17.12"
     fflate: "npm:^0.8.2"
-    js-yaml: "npm:^4.2.0"
+    js-yaml: "npm:^5.0.0"
     jszip: "npm:^3.10.1"
     lit: "npm:^3.2.0"
     lodash-es: "npm:^4.17.23"
@@ -2083,9 +2083,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@blocksuite/std@workspace:blocksuite/framework/std"
   dependencies:
-    "@atlaskit/pragmatic-drag-and-drop": "npm:^1.7.7"
-    "@atlaskit/pragmatic-drag-and-drop-auto-scroll": "npm:^2.1.2"
-    "@atlaskit/pragmatic-drag-and-drop-hitbox": "npm:^1.1.0"
+    "@atlaskit/pragmatic-drag-and-drop": "npm:^2.0.0"
+    "@atlaskit/pragmatic-drag-and-drop-auto-scroll": "npm:3.0.0"
+    "@atlaskit/pragmatic-drag-and-drop-hitbox": "npm:2.0.0"
     "@blocksuite/global": "workspace:*"
     "@blocksuite/store": "workspace:*"
     "@lit/context": "npm:^1.1.2"
@@ -2171,7 +2171,7 @@ __metadata:
     happy-dom: "npm:^20.0.0"
     playwright: "npm:1.58.2"
     react: "npm:^19.0.0"
-    typescript: "npm:5.9.3"
+    typescript: "npm:6.0.2"
     vite: "npm:^7.3.5"
     vitest: "npm:^4.1.10"
   languageName: unknown
@@ -6503,14 +6503,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"js-yaml@npm:^4.2.0":
-  version: 4.3.0
-  resolution: "js-yaml@npm:4.3.0"
+"js-yaml@npm:^5.0.0":
+  version: 5.4.2
+  resolution: "js-yaml@npm:5.4.2"
   dependencies:
     argparse: "npm:^2.0.1"
   bin:
-    js-yaml: bin/js-yaml.js
-  checksum: 10/2bcec3a8118d7f744badeb04e14366578d234a736f353d41fe35d2305e4ce2409a8e041d277f07cd6bbc8aaa12128d650a68ce43247072519bede20962d2126f
+    js-yaml: bin/js-yaml.mjs
+  checksum: 10/f2461abd1d6268fb226733f0a0e0aa48004bb824116e3dfa75f1a1279001936343b672066dfecdb852ac3ca883452706c383a760aa90430cb68ba395aa2cbc84
   languageName: node
   linkType: hard
 
@@ -9136,23 +9136,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:5.9.3":
-  version: 5.9.3
-  resolution: "typescript@npm:5.9.3"
+"typescript@npm:6.0.2":
+  version: 6.0.2
+  resolution: "typescript@npm:6.0.2"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 10/c089d9d3da2729fd4ac517f9b0e0485914c4b3c26f80dc0cffcb5de1719a17951e92425d55db59515c1a7ddab65808466debb864d0d56dcf43f27007d0709594
+  checksum: 10/b9fc2fcee7ee8e5ca6f5138181964550531e18e2d20ecb71b802d4d495881e3444e0ef94cbb6e84eb2ba41e913f6feae3ca33cc722b32e6e6dfadb32d23b80e6
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A5.9.3#optional!builtin<compat/typescript>":
-  version: 5.9.3
-  resolution: "typescript@patch:typescript@npm%3A5.9.3#optional!builtin<compat/typescript>::version=5.9.3&hash=5786d5"
+"typescript@patch:typescript@npm%3A6.0.2#optional!builtin<compat/typescript>":
+  version: 6.0.2
+  resolution: "typescript@patch:typescript@npm%3A6.0.2#optional!builtin<compat/typescript>::version=6.0.2&hash=5786d5"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 10/696e1b017bc2635f4e0c94eb4435357701008e2f272f553d06e35b494b8ddc60aa221145e286c28ace0c89ee32827a28c2040e3a69bdc108b1a5dc8fb40b72e3
+  checksum: 10/e5501dfcf8c5b6b9a61f6fa53decc40187cebe3a2b7b2bd51c615007ad4cf6d58298461fef63294f6be9d5f2f33019b2a2e2bf02d9cb7d7f6ec94372bf24ffa2
   languageName: node
   linkType: hard
 

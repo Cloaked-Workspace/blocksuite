@@ -21,6 +21,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  realpathSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -317,11 +318,25 @@ if (installed) {
   const strayResolutions = [];
   if (existsSync(lockPath)) {
     const lock = JSON.parse(readFileSync(lockPath, 'utf8'));
+    // npm records `resolved` relative to the real path of the project, and on
+    // macOS both the temporary directory and `/tmp` are symlinks into
+    // `/private`. Compare real paths on both sides, or a package installed from
+    // the artifacts reads as coming from somewhere else.
+    const realArtifactDir = realpathSync(artifactDir);
+    const realWorkDir = realpathSync(workDir);
+    const realOrNull = path => {
+      try {
+        return realpathSync(path);
+      } catch {
+        return null;
+      }
+    };
     for (const [path, entry] of Object.entries(lock.packages ?? {})) {
       const name = path.replace(/^node_modules\//, '');
       if (!tarballFor.has(name)) continue;
       const resolved = (entry.resolved ?? '').replace(/^file:/, '');
-      if (!containedIn(artifactDir, resolve(workDir, decodeURIComponent(resolved)))) {
+      const source = realOrNull(resolve(realWorkDir, decodeURIComponent(resolved)));
+      if (source === null || !containedIn(realArtifactDir, source)) {
         strayResolutions.push(`${name} <- ${entry.resolved ?? 'unrecorded'}`);
       }
     }

@@ -1,6 +1,7 @@
 # Publication-readiness review
 
 Date: 2026-07-29
+Updated: 2026-10-01, re-imported from AFFiNE `v0.27.4`.
 
 Status: **local package proof passed; publication remains disabled.**
 
@@ -41,21 +42,54 @@ configured.
 7. fork patches applied on top of the imported tree.
 
 The exact import commit has `blocksuite` tree SHA
-`d0e6e70bfa88943c79dd5608ff3556e9aafb1783`, matching AFFiNE commit
-`00576e1e7842fb63095cdc5d7a236321957b550c`.
+`044535822a52dc3134ef70d994901828db35c1ac`, matching AFFiNE tag `v0.27.4`,
+commit `b4c8548c09da21b2898443559a5b846f0ccf5dd8`. It replaced the first import,
+`00576e1e7842fb63095cdc5d7a236321957b550c` (tree `d0e6e70b…`), which `v0.27.4`
+descends from by 49 commits.
 
-The imported tree is no longer what gets built. Nine files carry fork patches,
+The imported tree is no longer what gets built. Ten files carry fork patches,
 recorded in `provenance/FORK_PATCHES.md`, producing built tree
-`00e032a0b60085f0db8ea30d5d8e4bbb70fc251c`. Three bound the polynomial regular
+`42b6cdabcbc58cffd358d7dc129171fd9739f67d`. Three bound the polynomial regular
 expressions CodeQL reported; four align the console whitelists that made the
 imported vitest configurations fail on CI; two remove the React icon re-export
-that made `react` a hard requirement for every consumer.
+that made `react` a hard requirement for every consumer; one pins the
+drag-and-drop plugins so a consumer resolves a single drag-and-drop core. The
+first four were carried onto `v0.27.4` without conflict.
 
-Mechanical review is therefore two steps rather than one: verify `d0e6e70b…`
-against upstream, then review those four commits. `scripts/build-cw-packages.mjs`
+Mechanical review is therefore two steps rather than one: verify `04453582…`
+against upstream, then review those five commits. `scripts/build-cw-packages.mjs`
 refuses to build any other tree, and `inventory.json` records both SHAs.
 
 ## Package transformation proof
+
+### The v0.27.4 import
+
+The current published-content digest is
+`848f1b6412f093b1f42191f941b3b7a6fd166735c8a7604efea22f33524680af`, with SBOM
+SHA-256 `c3e4aabc3e47852022b2aef904475f396d93d306939630f870ee5c9a1b351d06`.
+
+An incremental build and a forced rebuild, with every `dist` and
+`tsconfig.tsbuildinfo` removed first, produced byte-identical tarballs and SBOMs
+on macOS with Node 22.23.1 and npm 10.9.8, inside the pin. That closes the gap
+recorded below for the earlier digest: the pinned environment produces this one
+from clean. It has not yet been reproduced on a second platform; the CI run on
+the review branch is the first chance.
+
+Every transformation count is unchanged from the table below, and the 70 tarballs
+total 5.3 MB. The name mapping is unchanged.
+
+Two build inputs moved with the import. `v0.27.4` relies on TypeScript 6's DOM
+types for `window.scheduler` and names an `assets` types package, so the
+workspace now builds with TypeScript 6.0.2 and carries AFFiNE's
+`tools/@types/assets` verbatim. AFFiNE compiles with TypeScript 7's native
+`tsc`; 6.0.2 is the JavaScript release aligned with it and keeps the build free
+of platform-specific compiler binaries. `js-yaml` moves to 5.x, AFFiNE's
+security bump.
+
+### The first import
+
+The rest of this section records the evidence for the first import. Its digests
+describe that import's artifacts, not the current ones.
 
 Two independent forced rebuilds using vendored Yarn 4.13.0 produced an identical
 published-content digest for all 70 packages, one on Node 22.23.1 with npm
@@ -152,13 +186,17 @@ original scope. It is consumed from upstream and is not renamed or republished.
 
 ## Local verification
 
+Re-run on 2026-10-01 against the `v0.27.4` import, Node 22.23.1, with the same
+results as for the first import except where noted.
+
 - Node 22.23.1 / Yarn 4.13.0 immutable install: PASS.
 - TypeScript build: PASS, 70 projects.
 - Node/happy-dom unit tests: PASS, 49 files / 520 tests.
 - Chromium unit tests: PASS, 14 files / 124 tests.
 - Disposable consumer proof, `yarn verify:consumer`: PASS. All 70 tarballs
   install with scripts disabled, every entry point and declared `types` path
-  resolves, and esbuild links the editor into a 1.77 MB bundle.
+  resolves, and esbuild links the editor into a 1.77 MB bundle. The install is
+  now 402 packages.
 - Installed internal compiled/declaration references to `@blocksuite/*`: zero,
   apart from the external `@blocksuite/icons`.
 - Source tree after builds: unchanged and exact.
@@ -168,7 +206,7 @@ original scope. It is consumed from upstream and is not renamed or republished.
   elements, renders the document, accepts typed input into the block model, and
   re-renders on a model mutation.
 - Real consumer proof, `scripts/verify-cw-app.mjs`: PASS. The CW application's
-  own suite runs 23/23 and its Next.js 16.2.12 production build succeeds against
+  own suite runs 36/36 and its Next.js 16.3.8 production build succeeds against
   the staged artifacts, with every distribution package asserted to have
   resolved from them. See "The real consumer" below.
 
@@ -213,8 +251,27 @@ This record carried two claims for a long time that nothing could repeat, from a
 manual run against the CW application: tests 16/16, and a passing Next.js
 16.2.12 production build. They are now superseded rather than retained.
 
-`scripts/verify-cw-app.mjs` runs the real consumer against staged artifacts. On
-macOS, Node 20.18.2 with npm 11.12.1, against artifacts whose content digest is
+`scripts/verify-cw-app.mjs` runs the real consumer against staged artifacts.
+
+Against the `v0.27.4` artifacts, content digest `848f1b64…`, on macOS with Node
+22.23.1 and npm 10.9.8 and the application at `32360b81`:
+
+- 70 of 70 distribution packages declared and resolved from the artifact
+  directory.
+- Install: PASS, 861 packages; one copy of yjs.
+- Test suite: PASS, 36/36.
+- Next.js 16.3.8 production build: PASS, 29 routes.
+
+The first attempt reported all 70 packages as stray although the install had
+used the artifacts. npm writes each `file:` dependency relative to the project's
+real path, and on macOS both the temporary directory and `/tmp` are symlinks
+into `/private`; an artifact directory spelled under `/private/tmp` therefore
+never matched. The check now compares real paths on both sides. It failed
+closed, which is the right direction, but it was a harness defect and not a
+finding about the distribution.
+
+The earlier run, against the first import: on macOS, Node 20.18.2 with npm
+11.12.1, against artifacts whose content digest is
 `4b7a0f7f105c66eb87ae63cee742a6d52b55f1f1acf5f30225209c85eb9b2c24`:
 
 - 70 of 70 distribution packages declared by the application, all under the
