@@ -47,17 +47,18 @@ commit `b4c8548c09da21b2898443559a5b846f0ccf5dd8`. It replaced the first import,
 `00576e1e7842fb63095cdc5d7a236321957b550c` (tree `d0e6e70b…`), which `v0.27.4`
 descends from by 49 commits.
 
-The imported tree is no longer what gets built. Ten files carry fork patches,
+The imported tree is no longer what gets built. Thirteen files carry fork patches,
 recorded in `provenance/FORK_PATCHES.md`, producing built tree
-`42b6cdabcbc58cffd358d7dc129171fd9739f67d`. Three bound the polynomial regular
+`45d74766e7cb98cfaebae2145429011aae13b9f6`. Three bound the polynomial regular
 expressions CodeQL reported; four align the console whitelists that made the
 imported vitest configurations fail on CI; two remove the React icon re-export
 that made `react` a hard requirement for every consumer; one pins the
-drag-and-drop plugins so a consumer resolves a single drag-and-drop core. The
-first four were carried onto `v0.27.4` without conflict.
+drag-and-drop plugins so a consumer resolves a single drag-and-drop core; three
+backport AFFiNE's priority-queue fix, which landed after `v0.27.4` was tagged.
+The first four were carried onto `v0.27.4` without conflict.
 
 Mechanical review is therefore two steps rather than one: verify `04453582…`
-against upstream, then review those five commits. `scripts/build-cw-packages.mjs`
+against upstream, then review those six commits. `scripts/build-cw-packages.mjs`
 refuses to build any other tree, and `inventory.json` records both SHAs.
 
 ## Package transformation proof
@@ -208,7 +209,9 @@ results as for the first import except where noted.
 
 - Node 22.23.1 / Yarn 4.13.0 immutable install: PASS.
 - TypeScript build: PASS, 70 projects.
-- Node/happy-dom unit tests: PASS, 49 files / 520 tests.
+- Node/happy-dom unit tests: PASS, 55 files / 560 tests. The priority-queue
+  backport restored `affine/blocks/surface`'s vitest config; its six files and
+  40 tests were not collected before (49 files / 520 tests).
 - Chromium unit tests: PASS, 14 files / 124 tests.
 - Disposable consumer proof, `yarn verify:consumer`: PASS. All 70 tarballs
   install with scripts disabled, every entry point and declared `types` path
