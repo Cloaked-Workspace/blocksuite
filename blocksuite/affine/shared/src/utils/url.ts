@@ -106,10 +106,7 @@ const URL_SCHEME_IN_TOKEN_REGEXP =
 
 const URL_LEADING_DELIMITER_REGEXP = /^[-([{<'"~]+/;
 
-// Bounded: an unbounded `+$` rescans the whole run from every start offset,
-// so a token like `'!'.repeat(80_000) + 'a'` costs quadratic time. No real URL
-// carries more than a handful of trailing delimiters.
-const URL_TRAILING_DELIMITER_REGEXP = /[)\]}>.,;:!?'"]{1,32}$/;
+const URL_TRAILING_DELIMITER_REGEXP = /[)\]}>.,;:!?'"]+$/;
 
 export type UrlTextSegment = {
   text: string;

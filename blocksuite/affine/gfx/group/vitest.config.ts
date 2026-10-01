@@ -18,12 +18,7 @@ export default defineConfig({
       reportsDirectory: '../../../.coverage/affine-gfx-group',
     },
     onConsoleLog(log, type) {
-      if (
-        log.includes('lit.dev/msg/dev-mode') ||
-        log.includes(
-          `KaTeX doesn't work in quirks mode. Make sure your website has a suitable doctype.`
-        )
-      ) {
+      if (log.includes('lit.dev/msg/dev-mode')) {
         return false;
       }
       console.warn(`Unexpected ${type} log`, log);

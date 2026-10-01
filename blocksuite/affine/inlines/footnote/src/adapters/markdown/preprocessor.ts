@@ -29,13 +29,8 @@ function isUrl(str: string): boolean {
  * ```
  */
 export function preprocessFootnoteReference(content: string) {
-  // Bounded quantifiers: unbounded ones let the engine expand the leading token
-  // to the end of the input from every start offset, so a long token holding no
-  // reference at all costs quadratic time. The leading bound is the length of
-  // the preceding URL, so it allows for query and tracking parameters; the
-  // second is a footnote label, which is a short identifier.
   return content.replace(
-    /([^\s]{1,2048}?)(\[\^[^\]]{1,128}\])(?!:)/g,
+    /([^\s]+?)(\[\^[^\]]+\])(?!:)/g,
     (match, prevText, footnoteRef) => {
       // Only add space if the previous text is a URL
       if (isUrl(prevText)) {

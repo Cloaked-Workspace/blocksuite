@@ -12,11 +12,7 @@ export function resolveCssVariable(color: string): string | null {
     return null;
   }
   const rootComputedStyle = getComputedStyle(document.documentElement);
-  // Anchored: the guard above already established that `color` starts with
-  // `var(`, so only offset 0 can match. Unanchored, the engine retries from
-  // every later `var(` and rescans to the end each time, which costs quadratic
-  // time on a value like `'var(' + 'var(('.repeat(40_000)`.
-  const match = color.match(/^var\(([^)]+)\)/);
+  const match = color.match(/var\(([^)]+)\)/);
   if (!match || !match[1]) {
     return null;
   }
