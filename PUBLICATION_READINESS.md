@@ -75,7 +75,7 @@ on macOS with Node 22.23.1 and npm 10.9.8, inside the pin. The Linux CI run on
 the review branch, also Node 22.23.1 and npm 10.9.8, printed the same digest. So
 the pinned environment produces it from clean, on two platforms.
 
-The current digest is
+The license notice moved it to
 `a6c36a629b1382b498d6d41fa842978aba903cb4d7fee336d1b86bda4cd3aba4`, with SBOM
 SHA-256 `5c074661d388bd54b17ea60f2bdcaf83cffd2e2e2ea5046abb79793e79989156`. It
 moved because the builder now adds AFFiNE's `LICENSE-MIT` to every package: MIT
@@ -84,8 +84,17 @@ move is accounted for exactly rather than asserted. Recomputing the digest from
 the new tarballs with `LICENSE` excluded gives `848f1b64…` to the byte, and all
 70 `LICENSE` files are byte-identical to `LICENSES/AFFINE-LICENSE-MIT`, so the
 notice is the only published change. That build was a forced rebuild on macOS,
-Node 22.23.1, inside the pin; cross-platform agreement on the new value comes
-from the next CI run.
+Node 22.23.1, inside the pin, and Linux CI on #5 printed the same value.
+
+The current digest is
+`f0164723ab466d7a4ceb377717d3e304a28c7c446c3c819466fefb28eb65c2bb`, with SBOM
+SHA-256 `a3b7a18a25bd144b5c5e7b4539d9f217ae222507b2902b0f685e5468fddc88f8`. It
+moved for the priority-queue backport. Compared with the `a6c36a62…` artifacts,
+exactly one tarball changed, `blocksuite-affine-block-surface`, and in it exactly
+three files: `src/utils/priority-queue.ts` and its compiled `.js` and `.js.map`.
+The restored vitest config and the new tests are not published. That build was a
+forced rebuild on macOS, Node 22.23.1, inside the pin; cross-platform agreement
+on the new value comes from the next CI run.
 
 Every transformation count is unchanged from the table below, and the 70 tarballs
 total 5.3 MB. The name mapping is unchanged.
