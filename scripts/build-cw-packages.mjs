@@ -491,6 +491,31 @@ for (const name of packageNames) {
   }
 }
 
+// MIT's one condition is that the copyright and permission notice is included
+// in every copy, and each tarball is a copy. Upstream packs no LICENSE per
+// package — the notice lives once at the AFFiNE root — so the builder adds
+// AFFiNE's own LICENSE-MIT, unedited, to every package. It refuses a package
+// that does not declare MIT rather than attaching a notice that would misstate
+// its license, and refuses one that already carries a LICENSE so an upstream
+// notice is never silently replaced.
+const mitNotice = readFileSync(join(root, 'LICENSES', 'AFFINE-LICENSE-MIT'));
+let licenseNoticesAdded = 0;
+for (const name of packageNames) {
+  const packageRoot = packageRootFor(name);
+  const manifest = JSON.parse(readFileSync(join(packageRoot, 'package.json')));
+  if (manifest.license !== 'MIT') {
+    throw new Error(`${name} declares license ${manifest.license}, not MIT`);
+  }
+  const existing = readdirSync(packageRoot).filter(entry =>
+    /^(LICEN[CS]E|COPYING)/i.test(entry)
+  );
+  if (existing.length) {
+    throw new Error(`${name} already ships ${existing.join(', ')}`);
+  }
+  writeFileSync(join(packageRoot, 'LICENSE'), mitNotice);
+  licenseNoticesAdded++;
+}
+
 /**
  * Digest of what a package publishes, independent of the archiver.
  *
@@ -789,6 +814,7 @@ writeFileSync(
       packagesWithDeclaredSideEffects: packagesWithSideEffects,
       declaredSideEffectFiles,
       buildInfoFilesRemoved: removedBuildInfoFiles,
+      licenseNoticesAdded,
       packageCount: inventory.length,
       rewrittenPackageNames,
       rewrittenDependencySpecifiers,
