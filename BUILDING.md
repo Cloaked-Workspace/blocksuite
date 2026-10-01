@@ -66,9 +66,11 @@ The builder:
    Vanilla Extract output;
 7. removes each package's `tsconfig.tsbuildinfo`, which is TypeScript's
    incremental build cache rather than published content;
-8. packs 70 local tarballs and writes `inventory.json` with hashes and
+8. adds AFFiNE's `LICENSE-MIT`, unedited, as each package's `LICENSE`, and
+   refuses a package that does not declare MIT or already ships a license file;
+9. packs 70 local tarballs and writes `inventory.json` with hashes and
    transformation counts;
-9. removes repository-local staging.
+10. removes repository-local staging.
 
 Packing invokes the npm CLI bundled with the running Node.js binary rather
 than an arbitrary `npm` from `PATH`. The recorded npm version is therefore

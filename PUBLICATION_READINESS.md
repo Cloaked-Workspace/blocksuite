@@ -64,16 +64,27 @@ refuses to build any other tree, and `inventory.json` records both SHAs.
 
 ### The v0.27.4 import
 
-The current published-content digest is
+The import's own digest was
 `848f1b6412f093b1f42191f941b3b7a6fd166735c8a7604efea22f33524680af`, with SBOM
 SHA-256 `c3e4aabc3e47852022b2aef904475f396d93d306939630f870ee5c9a1b351d06`.
 
 An incremental build and a forced rebuild, with every `dist` and
 `tsconfig.tsbuildinfo` removed first, produced byte-identical tarballs and SBOMs
-on macOS with Node 22.23.1 and npm 10.9.8, inside the pin. That closes the gap
-recorded below for the earlier digest: the pinned environment produces this one
-from clean. It has not yet been reproduced on a second platform; the CI run on
-the review branch is the first chance.
+on macOS with Node 22.23.1 and npm 10.9.8, inside the pin. The Linux CI run on
+the review branch, also Node 22.23.1 and npm 10.9.8, printed the same digest. So
+the pinned environment produces it from clean, on two platforms.
+
+The current digest is
+`a6c36a629b1382b498d6d41fa842978aba903cb4d7fee336d1b86bda4cd3aba4`, with SBOM
+SHA-256 `5c074661d388bd54b17ea60f2bdcaf83cffd2e2e2ea5046abb79793e79989156`. It
+moved because the builder now adds AFFiNE's `LICENSE-MIT` to every package: MIT
+requires the notice in every copy, and none of the 70 tarballs carried one. The
+move is accounted for exactly rather than asserted. Recomputing the digest from
+the new tarballs with `LICENSE` excluded gives `848f1b64…` to the byte, and all
+70 `LICENSE` files are byte-identical to `LICENSES/AFFINE-LICENSE-MIT`, so the
+notice is the only published change. That build was a forced rebuild on macOS,
+Node 22.23.1, inside the pin; cross-platform agreement on the new value comes
+from the next CI run.
 
 Every transformation count is unchanged from the table below, and the 70 tarballs
 total 5.3 MB. The name mapping is unchanged.
@@ -174,6 +185,12 @@ Nothing detected the staleness except the printed export count and digest.
 A reviewer comparing a build against this record should check those two lines
 before anything else.
 
+The table above reproduces `4b7a0f7f…`, the first import's last digest. The
+license notice was first measured against that import, moving it to
+`7040e9c38dd74b04566c17a7f959d89a12cec0166c579b022968aef96c7ce053` with
+`LICENSE`-excluded recomputation giving `4b7a0f7f…` exactly. That value was never
+merged; the notice landed on the `v0.27.4` import instead, as recorded above.
+
 An earlier claim in this record, that a comparison build resolving npm 11 from
 `PATH` produced different gzip bytes, does not reproduce against npm 11.12.1.
 It is unverified as written and should not be relied on.
@@ -253,8 +270,9 @@ manual run against the CW application: tests 16/16, and a passing Next.js
 
 `scripts/verify-cw-app.mjs` runs the real consumer against staged artifacts.
 
-Against the `v0.27.4` artifacts, content digest `848f1b64…`, on macOS with Node
-22.23.1 and npm 10.9.8 and the application at `32360b81`:
+Against the `v0.27.4` artifacts, on macOS with Node 22.23.1 and npm 10.9.8 and
+the application at `32360b81`, both without the license notice (`848f1b64…`)
+and with it (`a6c36a62…`), with identical results:
 
 - 70 of 70 distribution packages declared and resolved from the artifact
   directory.
