@@ -39,8 +39,8 @@ const sourceScope = '@blocksuite/';
 // the fork patches recorded in provenance/FORK_PATCHES.md. Keeping both means a
 // reviewer can still verify the import mechanically and see exactly what the
 // fork changed on top of it.
-const upstreamSubtreeSha = 'd0e6e70bfa88943c79dd5608ff3556e9aafb1783';
-const patchedSubtreeSha = '00e032a0b60085f0db8ea30d5d8e4bbb70fc251c';
+const upstreamSubtreeSha = '044535822a52dc3134ef70d994901828db35c1ac';
+const patchedSubtreeSha = '42b6cdabcbc58cffd358d7dc129171fd9739f67d';
 const distributionScope = '@cloaked-workspace/';
 const distributionVersion = '0.27.0-cw.1';
 const scopeStage = join(stageRoot, 'node_modules', '@cloaked-workspace');
@@ -747,7 +747,7 @@ const sbom = {
         'Cloaked Workspace BlockSuite distribution, staged from the patched AFFiNE subtree',
     },
     properties: [
-      { name: 'cw:sourceCommit', value: '00576e1e7842fb63095cdc5d7a236321957b550c' },
+      { name: 'cw:sourceCommit', value: 'b4c8548c09da21b2898443559a5b846f0ccf5dd8' },
       { name: 'cw:upstreamSubtreeSha', value: upstreamSubtreeSha },
       { name: 'cw:patchedSubtreeSha', value: patchedSubtreeSha },
       { name: 'cw:inventoryContentSha256', value: inventoryContentSha256 },
@@ -768,7 +768,7 @@ writeFileSync(
   join(artifactDir, 'inventory.json'),
   `${JSON.stringify(
     {
-      sourceCommit: '00576e1e7842fb63095cdc5d7a236321957b550c',
+      sourceCommit: 'b4c8548c09da21b2898443559a5b846f0ccf5dd8',
       upstreamSubtreeSha,
       patchedSubtreeSha,
       verifiedSourceTreeSha: sourceTreeSha,
