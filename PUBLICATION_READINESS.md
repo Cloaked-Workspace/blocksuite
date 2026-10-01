@@ -47,17 +47,18 @@ commit `b4c8548c09da21b2898443559a5b846f0ccf5dd8`. It replaced the first import,
 `00576e1e7842fb63095cdc5d7a236321957b550c` (tree `d0e6e70b…`), which `v0.27.4`
 descends from by 49 commits.
 
-The imported tree is no longer what gets built. Ten files carry fork patches,
+The imported tree is no longer what gets built. Thirteen files carry fork patches,
 recorded in `provenance/FORK_PATCHES.md`, producing built tree
-`42b6cdabcbc58cffd358d7dc129171fd9739f67d`. Three bound the polynomial regular
+`45d74766e7cb98cfaebae2145429011aae13b9f6`. Three bound the polynomial regular
 expressions CodeQL reported; four align the console whitelists that made the
 imported vitest configurations fail on CI; two remove the React icon re-export
 that made `react` a hard requirement for every consumer; one pins the
-drag-and-drop plugins so a consumer resolves a single drag-and-drop core. The
-first four were carried onto `v0.27.4` without conflict.
+drag-and-drop plugins so a consumer resolves a single drag-and-drop core; three
+backport AFFiNE's priority-queue fix, which landed after `v0.27.4` was tagged.
+The first four were carried onto `v0.27.4` without conflict.
 
 Mechanical review is therefore two steps rather than one: verify `04453582…`
-against upstream, then review those five commits. `scripts/build-cw-packages.mjs`
+against upstream, then review those six commits. `scripts/build-cw-packages.mjs`
 refuses to build any other tree, and `inventory.json` records both SHAs.
 
 ## Package transformation proof
@@ -74,7 +75,7 @@ on macOS with Node 22.23.1 and npm 10.9.8, inside the pin. The Linux CI run on
 the review branch, also Node 22.23.1 and npm 10.9.8, printed the same digest. So
 the pinned environment produces it from clean, on two platforms.
 
-The current digest is
+The license notice moved it to
 `a6c36a629b1382b498d6d41fa842978aba903cb4d7fee336d1b86bda4cd3aba4`, with SBOM
 SHA-256 `5c074661d388bd54b17ea60f2bdcaf83cffd2e2e2ea5046abb79793e79989156`. It
 moved because the builder now adds AFFiNE's `LICENSE-MIT` to every package: MIT
@@ -83,8 +84,17 @@ move is accounted for exactly rather than asserted. Recomputing the digest from
 the new tarballs with `LICENSE` excluded gives `848f1b64…` to the byte, and all
 70 `LICENSE` files are byte-identical to `LICENSES/AFFINE-LICENSE-MIT`, so the
 notice is the only published change. That build was a forced rebuild on macOS,
-Node 22.23.1, inside the pin; cross-platform agreement on the new value comes
-from the next CI run.
+Node 22.23.1, inside the pin, and Linux CI on #5 printed the same value.
+
+The current digest is
+`f0164723ab466d7a4ceb377717d3e304a28c7c446c3c819466fefb28eb65c2bb`, with SBOM
+SHA-256 `a3b7a18a25bd144b5c5e7b4539d9f217ae222507b2902b0f685e5468fddc88f8`. It
+moved for the priority-queue backport. Compared with the `a6c36a62…` artifacts,
+exactly one tarball changed, `blocksuite-affine-block-surface`, and in it exactly
+three files: `src/utils/priority-queue.ts` and its compiled `.js` and `.js.map`.
+The restored vitest config and the new tests are not published. That build was a
+forced rebuild on macOS, Node 22.23.1, inside the pin; cross-platform agreement
+on the new value comes from the next CI run.
 
 Every transformation count is unchanged from the table below, and the 70 tarballs
 total 5.3 MB. The name mapping is unchanged.
@@ -208,7 +218,9 @@ results as for the first import except where noted.
 
 - Node 22.23.1 / Yarn 4.13.0 immutable install: PASS.
 - TypeScript build: PASS, 70 projects.
-- Node/happy-dom unit tests: PASS, 49 files / 520 tests.
+- Node/happy-dom unit tests: PASS, 55 files / 560 tests. The priority-queue
+  backport restored `affine/blocks/surface`'s vitest config; its six files and
+  40 tests were not collected before (49 files / 520 tests).
 - Chromium unit tests: PASS, 14 files / 124 tests.
 - Disposable consumer proof, `yarn verify:consumer`: PASS. All 70 tarballs
   install with scripts disabled, every entry point and declared `types` path
