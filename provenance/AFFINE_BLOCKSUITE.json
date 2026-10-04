@@ -9,14 +9,15 @@
   "subtreeSha": "044535822a52dc3134ef70d994901828db35c1ac",
   "forkPatches": {
     "record": "provenance/FORK_PATCHES.md",
-    "patchedSubtreeSha": "42b6cdabcbc58cffd358d7dc129171fd9739f67d",
-    "fileCount": 10,
+    "patchedSubtreeSha": "45d74766e7cb98cfaebae2145429011aae13b9f6",
+    "fileCount": 13,
     "commits": [
       "9d5fc7a2b395d68848af3cfd6d77238b27832653",
       "7e5a6f433259d244c0da9db4ecbca011f60eea1b",
       "f8ba0cb247d8023c8b6f3893ed25158641b64906",
       "c2c50a59d948bf60ef1561731798def52e7f810e",
-      "28fb823b7b219780b0a8241e6a5d4aecb2fcfeb5"
+      "28fb823b7b219780b0a8241e6a5d4aecb2fcfeb5",
+      "38d907c6aa2ec36397738035d7b29a1a540424a2"
     ]
   },
   "latestCommitAffectingSubtree": {
@@ -45,7 +46,7 @@
     "Copy upstream root LICENSE to LICENSES/AFFINE-LICENSE outside the imported subtree",
     "Copy upstream root LICENSE-MIT to LICENSES/AFFINE-LICENSE-MIT outside the imported subtree",
     "Add this provenance record at provenance/AFFINE_BLOCKSUITE.json outside the imported subtree",
-    "Apply the fork patches recorded in provenance/FORK_PATCHES.md, producing subtree 42b6cdabcbc58cffd358d7dc129171fd9739f67d"
+    "Apply the fork patches recorded in provenance/FORK_PATCHES.md, producing subtree 45d74766e7cb98cfaebae2145429011aae13b9f6"
   ],
   "previousImport": {
     "sourceCommit": "00576e1e7842fb63095cdc5d7a236321957b550c",

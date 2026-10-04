@@ -4,10 +4,10 @@ The `blocksuite/` tree was imported unchanged from AFFiNE commit
 `b4c8548c09da21b2898443559a5b846f0ccf5dd8` (tag `v0.27.4`), subtree SHA
 `044535822a52dc3134ef70d994901828db35c1ac`. The patches below are applied on
 top of that import, so the built tree is
-`42b6cdabcbc58cffd358d7dc129171fd9739f67d`.
+`45d74766e7cb98cfaebae2145429011aae13b9f6`.
 
 Reviewing the import mechanically therefore takes two steps rather than one:
-verify `04453582…` against upstream, then review the five commits listed here.
+verify `04453582…` against upstream, then review the six commits listed here.
 Nothing else in `blocksuite/` deviates.
 
 `scripts/build-cw-packages.mjs` refuses to build unless the tree matches the
@@ -98,6 +98,31 @@ published ranges resolves one core, 2.0.2.
 The pins should be lifted together, to a plugin pair that shares a core, rather
 than one at a time.
 
+## `38d907c6aa2ec36397738035d7b29a1a540424a2` — backport the priority-queue fix
+
+AFFiNE's own fix, `b4331cbe1ea7ba2db115be6d74e3544b41f1d495` (#15568), applied
+unchanged with its upstream authorship. It landed on canary on 2026-09-07,
+after `v0.27.4` was tagged.
+
+`PriorityQueue.bubbleDown` initialised `swap` to `-1` but tested it against
+`null`, so the right child was never compared with the element being sunk and
+a node could sink below a child larger than itself. The queue backs the A*
+router for orthogonal connectors, so routes stayed valid but lost their
+shortest / fewest-bends guarantee.
+
+| File | Change |
+|---|---|
+| `affine/blocks/surface/src/utils/priority-queue.ts` | compare `swap` against `-1` |
+| `affine/blocks/surface/src/__tests__/priority-queue.unit.spec.ts` | two regression tests |
+| `affine/blocks/surface/vitest.config.ts` | restored, so the package's six test files run at all |
+
+The restored config re-enables 40 tests that had not run upstream since
+2025-03-08. With the one-line fix reverted, both regression tests fail.
+
+This patch is already upstream. It falls away at the next import from an
+AFFiNE release that contains `b4331cbe`; that import should verify the
+upstream file matches and drop the entry rather than carry it.
+
 ## Carried across the v0.27.4 import
 
 The first four patches were made against the earlier import of AFFiNE
@@ -106,7 +131,7 @@ without conflict. Upstream had not touched any of the lines they change.
 
 ## Upstream status
 
-All of these patches are candidates to propose upstream, which would remove the need to
+The first five patches are candidates to propose upstream, which would remove the need to
 carry them. Nothing has been submitted. AFFiNE's `SECURITY.md` declines
 AI-generated security reports, so any submission must be authored and verified
 by a maintainer of this fork.
