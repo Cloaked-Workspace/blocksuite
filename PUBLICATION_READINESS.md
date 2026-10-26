@@ -88,7 +88,7 @@ the new tarballs with `LICENSE` excluded gives `848f1b64…` to the byte, and al
 notice is the only published change. That build was a forced rebuild on macOS,
 Node 22.23.1, inside the pin, and Linux CI on #5 printed the same value.
 
-The current digest is
+The priority-queue backport moved it to
 `f0164723ab466d7a4ceb377717d3e304a28c7c446c3c819466fefb28eb65c2bb`, with SBOM
 SHA-256 `a3b7a18a25bd144b5c5e7b4539d9f217ae222507b2902b0f685e5468fddc88f8`. It
 moved for the priority-queue backport. Compared with the `a6c36a62…` artifacts,
@@ -97,6 +97,14 @@ three files: `src/utils/priority-queue.ts` and its compiled `.js` and `.js.map`.
 The restored vitest config and the new tests are not published. That build was a
 forced rebuild on macOS, Node 22.23.1, inside the pin; cross-platform agreement
 on the new value comes from the next CI run.
+
+The current digest is
+`936f878ee6c7eccbac444462a265d2aa4eda0ad2535727bea3367e30ec39854b`, with SBOM
+SHA-256 `32dfa7b982b60d3ea3eefdddb70f86c845fdea44ef20373bd0073b3e327493e7`, for
+`0.27.0-cw.2`: the zod 4.6 move plus the version, which is written into every
+package and so changes every tarball. Two consecutive builds on macOS, Node
+22.23.1 and npm 10.9.8, inside the pin, produced it identically (2026-10-26);
+cross-platform agreement comes from the next CI run.
 
 Every transformation count is unchanged from the table below, and the 70 tarballs
 total 5.3 MB. The name mapping is unchanged.
@@ -214,6 +222,22 @@ No package in the 70-package graph was unreproducible from the tag;
 original scope. It is consumed from upstream and is not renamed or republished.
 
 ## Local verification
+
+Re-run on 2026-10-26 for the zod 4.6 move (`0.27.0-cw.2`), Node 22.23.1:
+
+- Node 22.23.1 / Yarn 4.13.0 install: PASS. `yarn.lock` changes in one entry,
+  `zod@npm:^3.25.76` (3.25.76) to `zod@npm:^4.6.6` (4.6.7).
+- TypeScript build: PASS, 70 projects, forced.
+- Node/happy-dom unit tests: PASS, 56 files / 580 tests. The new
+  `affine/all` zod-behaviour spec adds one file and 20 tests; it passes
+  unchanged against the snapshots recorded on zod 3.25.76.
+- Chromium unit tests: PASS, 14 files / 124 tests.
+- Two `yarn build:packages` runs: identical digest, above.
+- `yarn verify:consumer`: PASS, 402 packages. The esbuild editor bundle grows
+  from 1.77 MB to 2.39 MB; zod 4 is larger than zod 3.
+- `yarn verify:consumer:app`: PASS, no console errors.
+- Not re-run: `scripts/verify-cw-app.mjs`. CW re-vendors these artifacts and
+  runs its own suite and Next.js build on that change instead.
 
 Re-run on 2026-10-01 against the `v0.27.4` import, Node 22.23.1, with the same
 results as for the first import except where noted.
