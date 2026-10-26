@@ -1,0 +1,382 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`deep-optional edgeless props > a partial update keeps only what was given 1`] = `
+{
+  "affine:note": {
+    "edgeless": {
+      "style": {
+        "borderSize": 2,
+      },
+    },
+  },
+  "connector": {
+    "labelStyle": {
+      "fontSize": 20,
+    },
+    "stroke": "#ff0000",
+  },
+  "shape:rect": {
+    "filled": false,
+  },
+}
+`;
+
+exports[`edgeless props defaults > an empty editor setting parses to every default 1`] = `
+{
+  "affine:edgeless-text": {
+    "color": {
+      "dark": "#ffffff",
+      "light": "#000000",
+    },
+    "fontFamily": "blocksuite:surface:Inter",
+    "fontStyle": "normal",
+    "fontWeight": "400",
+    "textAlign": "left",
+  },
+  "affine:frame": {
+    "background": "transparent",
+  },
+  "affine:note": {
+    "background": {
+      "dark": "#252525",
+      "light": "#ffffff",
+    },
+    "displayMode": "edgeless",
+    "edgeless": {
+      "style": {
+        "borderRadius": 8,
+        "borderSize": 4,
+        "borderStyle": "none",
+        "shadowType": "--affine-note-shadow-box",
+      },
+    },
+  },
+  "brush": {
+    "color": {
+      "dark": "#ffffff",
+      "light": "#000000",
+    },
+    "lineWidth": 4,
+  },
+  "connector": {
+    "frontEndpointStyle": "None",
+    "labelStyle": {
+      "color": {
+        "dark": "#ffffff",
+        "light": "#000000",
+      },
+      "fontFamily": "blocksuite:surface:Inter",
+      "fontSize": 16,
+      "fontStyle": "normal",
+      "fontWeight": "400",
+      "textAlign": "center",
+    },
+    "mode": 2,
+    "rearEndpointStyle": "Arrow",
+    "rough": false,
+    "stroke": "#929292",
+    "strokeStyle": "solid",
+    "strokeWidth": 2,
+  },
+  "docCanvasPreferView": "affine:embed-synced-doc",
+  "edgelessDisableScheduleUpdate": false,
+  "edgelessScrollZoom": false,
+  "highlighter": {
+    "color": "#84cfff4d",
+    "lineWidth": 22,
+  },
+  "mindmap": {
+    "layoutType": 0,
+    "style": 1,
+  },
+  "shape:diamond": {
+    "color": "#000000",
+    "fillColor": "#fcd34d",
+    "filled": true,
+    "fontFamily": "blocksuite:surface:Inter",
+    "fontSize": 20,
+    "fontStyle": "normal",
+    "fontWeight": "400",
+    "radius": 0,
+    "roughness": 1.4,
+    "shapeStyle": "General",
+    "strokeColor": "#fcd34d",
+    "strokeStyle": "solid",
+    "strokeWidth": 2,
+    "textAlign": "center",
+  },
+  "shape:ellipse": {
+    "color": "#000000",
+    "fillColor": "#fcd34d",
+    "filled": true,
+    "fontFamily": "blocksuite:surface:Inter",
+    "fontSize": 20,
+    "fontStyle": "normal",
+    "fontWeight": "400",
+    "radius": 0,
+    "roughness": 1.4,
+    "shapeStyle": "General",
+    "strokeColor": "#fcd34d",
+    "strokeStyle": "solid",
+    "strokeWidth": 2,
+    "textAlign": "center",
+  },
+  "shape:rect": {
+    "color": "#000000",
+    "fillColor": "#fcd34d",
+    "filled": true,
+    "fontFamily": "blocksuite:surface:Inter",
+    "fontSize": 20,
+    "fontStyle": "normal",
+    "fontWeight": "400",
+    "radius": 0,
+    "roughness": 1.4,
+    "shapeStyle": "General",
+    "strokeColor": "#fcd34d",
+    "strokeStyle": "solid",
+    "strokeWidth": 2,
+    "textAlign": "center",
+  },
+  "shape:roundedRect": {
+    "color": "#000000",
+    "fillColor": "#fcd34d",
+    "filled": true,
+    "fontFamily": "blocksuite:surface:Inter",
+    "fontSize": 20,
+    "fontStyle": "normal",
+    "fontWeight": "400",
+    "radius": 0.1,
+    "roughness": 1.4,
+    "shapeStyle": "General",
+    "strokeColor": "#fcd34d",
+    "strokeStyle": "solid",
+    "strokeWidth": 2,
+    "textAlign": "center",
+  },
+  "shape:triangle": {
+    "color": "#000000",
+    "fillColor": "#fcd34d",
+    "filled": true,
+    "fontFamily": "blocksuite:surface:Inter",
+    "fontSize": 20,
+    "fontStyle": "normal",
+    "fontWeight": "400",
+    "radius": 0,
+    "roughness": 1.4,
+    "shapeStyle": "General",
+    "strokeColor": "#fcd34d",
+    "strokeStyle": "solid",
+    "strokeWidth": 2,
+    "textAlign": "center",
+  },
+  "text": {
+    "color": {
+      "dark": "#ffffff",
+      "light": "#000000",
+    },
+    "fontFamily": "blocksuite:surface:Inter",
+    "fontSize": 24,
+    "fontStyle": "normal",
+    "fontWeight": "400",
+    "textAlign": "left",
+  },
+}
+`;
+
+exports[`edgeless props defaults > each key parses undefined to its default 1`] = `
+{
+  "affine:edgeless-text": {
+    "color": {
+      "dark": "#ffffff",
+      "light": "#000000",
+    },
+    "fontFamily": "blocksuite:surface:Inter",
+    "fontStyle": "normal",
+    "fontWeight": "400",
+    "textAlign": "left",
+  },
+  "affine:frame": {
+    "background": "transparent",
+  },
+  "affine:note": {
+    "background": {
+      "dark": "#252525",
+      "light": "#ffffff",
+    },
+    "displayMode": "edgeless",
+    "edgeless": {
+      "style": {
+        "borderRadius": 8,
+        "borderSize": 4,
+        "borderStyle": "none",
+        "shadowType": "--affine-note-shadow-box",
+      },
+    },
+  },
+  "brush": {
+    "color": {
+      "dark": "#ffffff",
+      "light": "#000000",
+    },
+    "lineWidth": 4,
+  },
+  "connector": {
+    "frontEndpointStyle": "None",
+    "labelStyle": {
+      "color": {
+        "dark": "#ffffff",
+        "light": "#000000",
+      },
+      "fontFamily": "blocksuite:surface:Inter",
+      "fontSize": 16,
+      "fontStyle": "normal",
+      "fontWeight": "400",
+      "textAlign": "center",
+    },
+    "mode": 2,
+    "rearEndpointStyle": "Arrow",
+    "rough": false,
+    "stroke": "#929292",
+    "strokeStyle": "solid",
+    "strokeWidth": 2,
+  },
+  "highlighter": {
+    "color": "#84cfff4d",
+    "lineWidth": 22,
+  },
+  "mindmap": {
+    "layoutType": 0,
+    "style": 1,
+  },
+  "shape:diamond": {
+    "color": "#000000",
+    "fillColor": "#fcd34d",
+    "filled": true,
+    "fontFamily": "blocksuite:surface:Inter",
+    "fontSize": 20,
+    "fontStyle": "normal",
+    "fontWeight": "400",
+    "radius": 0,
+    "roughness": 1.4,
+    "shapeStyle": "General",
+    "strokeColor": "#fcd34d",
+    "strokeStyle": "solid",
+    "strokeWidth": 2,
+    "textAlign": "center",
+  },
+  "shape:ellipse": {
+    "color": "#000000",
+    "fillColor": "#fcd34d",
+    "filled": true,
+    "fontFamily": "blocksuite:surface:Inter",
+    "fontSize": 20,
+    "fontStyle": "normal",
+    "fontWeight": "400",
+    "radius": 0,
+    "roughness": 1.4,
+    "shapeStyle": "General",
+    "strokeColor": "#fcd34d",
+    "strokeStyle": "solid",
+    "strokeWidth": 2,
+    "textAlign": "center",
+  },
+  "shape:rect": {
+    "color": "#000000",
+    "fillColor": "#fcd34d",
+    "filled": true,
+    "fontFamily": "blocksuite:surface:Inter",
+    "fontSize": 20,
+    "fontStyle": "normal",
+    "fontWeight": "400",
+    "radius": 0,
+    "roughness": 1.4,
+    "shapeStyle": "General",
+    "strokeColor": "#fcd34d",
+    "strokeStyle": "solid",
+    "strokeWidth": 2,
+    "textAlign": "center",
+  },
+  "shape:roundedRect": {
+    "color": "#000000",
+    "fillColor": "#fcd34d",
+    "filled": true,
+    "fontFamily": "blocksuite:surface:Inter",
+    "fontSize": 20,
+    "fontStyle": "normal",
+    "fontWeight": "400",
+    "radius": 0.1,
+    "roughness": 1.4,
+    "shapeStyle": "General",
+    "strokeColor": "#fcd34d",
+    "strokeStyle": "solid",
+    "strokeWidth": 2,
+    "textAlign": "center",
+  },
+  "shape:triangle": {
+    "color": "#000000",
+    "fillColor": "#fcd34d",
+    "filled": true,
+    "fontFamily": "blocksuite:surface:Inter",
+    "fontSize": 20,
+    "fontStyle": "normal",
+    "fontWeight": "400",
+    "radius": 0,
+    "roughness": 1.4,
+    "shapeStyle": "General",
+    "strokeColor": "#fcd34d",
+    "strokeStyle": "solid",
+    "strokeWidth": 2,
+    "textAlign": "center",
+  },
+  "text": {
+    "color": {
+      "dark": "#ffffff",
+      "light": "#000000",
+    },
+    "fontFamily": "blocksuite:surface:Inter",
+    "fontSize": 24,
+    "fontStyle": "normal",
+    "fontWeight": "400",
+    "textAlign": "left",
+  },
+}
+`;
+
+exports[`inline text attributes > base attributes alone behave the same 1`] = `
+{
+  "bold": true,
+  "strike": null,
+}
+`;
+
+exports[`inline text attributes > invalid values fall back to undefined instead of failing 1`] = `
+{
+  "bold": undefined,
+  "code": undefined,
+  "comment-abc": undefined,
+  "link": undefined,
+  "reference": undefined,
+}
+`;
+
+exports[`inline text attributes > known attributes survive and unknown ones are dropped 1`] = `
+{
+  "bold": true,
+  "color": "var(--affine-text-highlight-foreground-red)",
+  "comment-abc": true,
+  "comment-def": false,
+  "italic": true,
+  "latex": "x^2",
+  "link": "https://example.com/",
+  "reference": {
+    "pageId": "page-1",
+    "type": "LinkedPage",
+  },
+}
+`;
+
+exports[`inline text attributes > the code block accepts attributes without its unit marker 1`] = `
+{
+  "bold": true,
+}
+`;
