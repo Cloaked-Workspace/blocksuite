@@ -33,7 +33,7 @@ const npmCli = resolve(
 );
 const artifactDir = resolve(
   process.env.BLOCKSUITE_ARTIFACT_DIR ??
-    join(tmpdir(), 'cloaked-workspace-blocksuite-0.27.0-cw.1-artifacts')
+    join(tmpdir(), 'cloaked-workspace-blocksuite-0.27.0-cw.2-artifacts')
 );
 const keepProject = process.argv.includes('--keep');
 

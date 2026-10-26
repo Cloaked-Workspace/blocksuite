@@ -40,7 +40,8 @@ The complete mapping is checked into
 [`provenance/PACKAGE_NAME_MAPPING.json`](provenance/PACKAGE_NAME_MAPPING.json)
 and is verified against the discovered dependency graph on every package build.
 
-The first proposed fork version is `0.27.0-cw.1`. Name, internal dependency,
+The current fork version is `0.27.0-cw.2`. `0.27.0-cw.1` covered both the
+first import and `v0.27.4`; `cw.2` is the first build on zod 4. Name, internal dependency,
 compiled JavaScript, declaration, export, accessor and Vanilla Extract
 transformations occur only in disposable staging output.
 

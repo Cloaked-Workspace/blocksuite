@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "distributionScope": "@cloaked-workspace/",
-  "distributionVersion": "0.27.0-cw.1",
+  "distributionVersion": "0.27.0-cw.2",
   "externalUnchanged": [
     "@blocksuite/icons"
   ],
