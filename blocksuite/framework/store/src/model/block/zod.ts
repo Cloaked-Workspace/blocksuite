@@ -10,6 +10,13 @@ const ParentSchema = z.array(z.string()).optional();
 const ContentSchema = z.array(z.string()).optional();
 const RoleSchema = z.string();
 
+// zod 4's `z.function()` is a function factory rather than a schema. These
+// fields were only ever checked for being functions — the argument-checking
+// wrapper zod 3 returned was discarded by every caller — so a custom schema
+// keeps exactly that check.
+const functionSchema = <Fn extends (...args: never[]) => unknown>() =>
+  z.custom<Fn>(value => typeof value === 'function');
+
 export type RoleType = 'root' | 'content' | string;
 
 export interface InternalPrimitives {
@@ -30,18 +37,14 @@ export const BlockSchema = z.object({
     parent: ParentSchema,
     children: ContentSchema,
     isFlatData: z.boolean().optional(),
-    props: z
-      .function()
-      .args(z.custom<InternalPrimitives>())
-      .returns(z.record(z.any()))
-      .optional(),
-    toModel: z.function().args().returns(z.custom<BlockModel>()).optional(),
+    props: functionSchema<
+      (internalPrimitives: InternalPrimitives) => Record<string, any>
+    >().optional(),
+    toModel: functionSchema<() => BlockModel>().optional(),
   }),
-  transformer: z
-    .function()
-    .args(z.custom<Map<string, unknown>>())
-    .returns(z.custom<BaseBlockTransformer>())
-    .optional(),
+  transformer: functionSchema<
+    (transformerConfig: Map<string, unknown>) => BaseBlockTransformer
+  >().optional(),
 });
 
 export type BlockSchemaType = z.infer<typeof BlockSchema>;

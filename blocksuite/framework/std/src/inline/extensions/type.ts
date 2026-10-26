@@ -5,19 +5,15 @@ import type {
 } from '@blocksuite/std/inline';
 import type { BaseTextAttributes, DeltaInsert } from '@blocksuite/store';
 import type * as Y from 'yjs';
-import type { AnyZodObject, KeySchema, ZodEffects, ZodRecord } from 'zod';
+import type { z } from 'zod';
 
 export type InlineSpecs<
   TextAttributes extends BaseTextAttributes = BaseTextAttributes,
 > = {
   name: keyof TextAttributes | string;
-  schema:
-    | AnyZodObject
-    | ZodEffects<
-        ZodRecord<KeySchema>,
-        Partial<Record<string, unknown>>,
-        unknown
-      >;
+  // A `z.object` of the spec's attributes, or a `dynamicSchema` for specs whose
+  // attribute keys are not known in advance.
+  schema: z.ZodType<Partial<Record<string, unknown>>>;
   match: (delta: DeltaInsert<TextAttributes>) => boolean;
   renderer: AttributeRenderer<TextAttributes>;
   embed?: boolean;

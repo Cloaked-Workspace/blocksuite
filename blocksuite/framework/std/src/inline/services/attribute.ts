@@ -1,5 +1,5 @@
 import { type BaseTextAttributes, baseTextAttributes } from '@blocksuite/store';
-import type { z, ZodTypeDef } from 'zod';
+import type { z } from 'zod';
 
 import type { InlineEditor } from '../inline-editor.js';
 import type { AttributeRenderer, InlineRange } from '../types.js';
@@ -9,8 +9,9 @@ export class AttributeService<TextAttributes extends BaseTextAttributes> {
   private _attributeRenderer: AttributeRenderer<TextAttributes> =
     getDefaultAttributeRenderer<TextAttributes>();
 
-  private _attributeSchema: z.ZodSchema<TextAttributes, ZodTypeDef, unknown> =
-    baseTextAttributes as never;
+  // Callers pass schemas composed at runtime (`InlineManager.getSchema`), whose
+  // output zod cannot type, so the parsed result is narrowed below instead.
+  private _attributeSchema: z.ZodType = baseTextAttributes;
 
   private _marks: TextAttributes | null = null;
 
@@ -72,7 +73,9 @@ export class AttributeService<TextAttributes extends BaseTextAttributes> {
     }
     return Object.fromEntries(
       // filter out undefined values
-      Object.entries(attributeResult.data).filter(([_, v]) => v !== undefined)
+      Object.entries(attributeResult.data as object).filter(
+        ([_, v]) => v !== undefined
+      )
     ) as TextAttributes;
   };
 
@@ -84,9 +87,7 @@ export class AttributeService<TextAttributes extends BaseTextAttributes> {
     this._attributeRenderer = renderer;
   };
 
-  setAttributeSchema = (
-    schema: z.ZodSchema<TextAttributes, ZodTypeDef, unknown>
-  ) => {
+  setAttributeSchema = (schema: z.ZodType) => {
     this._attributeSchema = schema;
   };
 
