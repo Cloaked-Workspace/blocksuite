@@ -47,18 +47,20 @@ commit `b4c8548c09da21b2898443559a5b846f0ccf5dd8`. It replaced the first import,
 `00576e1e7842fb63095cdc5d7a236321957b550c` (tree `d0e6e70b…`), which `v0.27.4`
 descends from by 49 commits.
 
-The imported tree is no longer what gets built. Thirteen files carry fork patches,
+The imported tree is no longer what gets built. Fifty-one files carry fork patches,
 recorded in `provenance/FORK_PATCHES.md`, producing built tree
-`45d74766e7cb98cfaebae2145429011aae13b9f6`. Three bound the polynomial regular
+`b5956570e974ab9627aa03f06e2bbca524ba2604`. Three bound the polynomial regular
 expressions CodeQL reported; four align the console whitelists that made the
 imported vitest configurations fail on CI; two remove the React icon re-export
 that made `react` a hard requirement for every consumer; one pins the
 drag-and-drop plugins so a consumer resolves a single drag-and-drop core; three
-backport AFFiNE's priority-queue fix, which landed after `v0.27.4` was tagged.
-The first four were carried onto `v0.27.4` without conflict.
+backport AFFiNE's priority-queue fix, which landed after `v0.27.4` was tagged;
+thirty-nine move the packages from zod 3 to zod 4.6 and pin the results that
+move could have changed (one, `framework/std/package.json`, also carries the
+drag-and-drop pin). The first four were carried onto `v0.27.4` without conflict.
 
 Mechanical review is therefore two steps rather than one: verify `04453582…`
-against upstream, then review those six commits. `scripts/build-cw-packages.mjs`
+against upstream, then review those eight commits. `scripts/build-cw-packages.mjs`
 refuses to build any other tree, and `inventory.json` records both SHAs.
 
 ## Package transformation proof

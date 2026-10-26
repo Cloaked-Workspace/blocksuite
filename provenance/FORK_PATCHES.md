@@ -4,10 +4,10 @@ The `blocksuite/` tree was imported unchanged from AFFiNE commit
 `b4c8548c09da21b2898443559a5b846f0ccf5dd8` (tag `v0.27.4`), subtree SHA
 `044535822a52dc3134ef70d994901828db35c1ac`. The patches below are applied on
 top of that import, so the built tree is
-`45d74766e7cb98cfaebae2145429011aae13b9f6`.
+`b5956570e974ab9627aa03f06e2bbca524ba2604`.
 
 Reviewing the import mechanically therefore takes two steps rather than one:
-verify `04453582…` against upstream, then review the six commits listed here.
+verify `04453582…` against upstream, then review the eight commits listed here.
 Nothing else in `blocksuite/` deviates.
 
 `scripts/build-cw-packages.mjs` refuses to build unless the tree matches the
@@ -122,6 +122,46 @@ The restored config re-enables 40 tests that had not run upstream since
 This patch is already upstream. It falls away at the next import from an
 AFFiNE release that contains `b4331cbe`; that import should verify the
 upstream file matches and drop the entry rather than carry it.
+
+## `5efe9989fbdfd0ca9005209ab519e5f47f0a6ad3` and `7f9e49ef472e9ec66e15c010481503a1a00ea936` — move from zod 3 to zod 4.6
+
+Every zod below 4.6.6 is covered by GHSA-mrhx-c7xc-m3w5, no patched 3.x
+exists, and zod is the only advisory CW's production audit reports against
+these packages. The 22 workspaces that declared `zod ^3.25.76` now declare
+`^4.6.6`; the lockfile's single zod entry resolves 4.6.7. The plan and its
+decisions are CW's `docs/blocksuite-zod4-migration-plan.md`.
+
+The first commit adds `affine/all/src/__tests__/zod-behaviour.unit.spec.ts`,
+which snapshots the results of every schema whose semantics differ between
+the two majors. It was written and recorded on zod 3.25.76; the second commit
+changes the dependency and the source and passes it unchanged.
+
+| Change | Files |
+|---|---|
+| `z.function()` is no longer a schema; fields that were only checked for being functions become `z.custom` with that check | `framework/store/src/model/block/zod.ts`, `affine/blocks/{paragraph,database}/src/view.ts`, `affine/widgets/linked-doc/src/view.ts`, `affine/data-view/src/core/logical/composite-type.ts` |
+| single-argument `z.record()` gains a string key | `framework/store/src/transformer/type.ts`, `affine/shared/src/services/link-preview-service/link-preview-storage.ts` |
+| `ZodEffects`, `ZodTypeDef`, `AnyZodObject`, `KeySchema` replaced by `z.ZodType` | `framework/std/src/inline/{extensions/type,services/attribute,utils/dynamic-schema}.ts` |
+| schema internals reached through `unwrap()` and `def` | `affine/shared/src/utils/zod-schema.ts`, `affine/shared/src/services/edit-props-store.ts` |
+| missing-key semantics, below | `affine/shared/src/utils/zod-schema.ts`, `affine/blocks/code/src/code-block-inline.ts`, `affine/inlines/latex/src/inline-spec.ts` |
+| `zod` range | 22 `package.json` files, root `yarn.lock` |
+
+zod 4.6 rejects a missing object key unless the key's schema is optional, even
+when that schema accepts `undefined` (`z.undefined()`, `z.unknown()`,
+`z.any()`, `z.custom()`, a union with `z.undefined()`). Two places relied on
+the zod 3 behaviour: `makeDeepOptional` made unions optional with
+`.or(z.undefined())`, and the code-block and latex-editor unit specs declared
+their marker attribute as a bare `z.undefined()`, which would have failed
+attribute validation for every delta in those editors. Both now use
+`.optional()`, which accepts the same input on either major. The other bare
+`z.custom` fields are either already optional or, as with `UserInfoSchema`,
+never parsed.
+
+Deprecated but working APIs (`z.nativeEnum`, `.merge()`, `ZodTypeAny`) are
+deliberately left in place to keep the patch small to carry.
+
+AFFiNE is still on zod 3, so this patch has no upstream counterpart. Every
+re-import must carry it: rebase both commits, then let the TypeScript build
+and the pinned tests find any zod 3 usage the new upstream added.
 
 ## Carried across the v0.27.4 import
 
