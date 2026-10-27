@@ -40,13 +40,13 @@ const sourceScope = '@blocksuite/';
 // reviewer can still verify the import mechanically and see exactly what the
 // fork changed on top of it.
 const upstreamSubtreeSha = '044535822a52dc3134ef70d994901828db35c1ac';
-const patchedSubtreeSha = '45d74766e7cb98cfaebae2145429011aae13b9f6';
+const patchedSubtreeSha = 'b5956570e974ab9627aa03f06e2bbca524ba2604';
 const distributionScope = '@cloaked-workspace/';
-const distributionVersion = '0.27.0-cw.1';
+const distributionVersion = '0.27.0-cw.2';
 const scopeStage = join(stageRoot, 'node_modules', '@cloaked-workspace');
 const artifactDir = resolve(
   process.env.BLOCKSUITE_ARTIFACT_DIR ??
-    join(tmpdir(), 'cloaked-workspace-blocksuite-0.27.0-cw.1-artifacts')
+    join(tmpdir(), 'cloaked-workspace-blocksuite-0.27.0-cw.2-artifacts')
 );
 
 if (!isAbsolute(artifactDir) || relative(root, artifactDir).startsWith('..') === false) {

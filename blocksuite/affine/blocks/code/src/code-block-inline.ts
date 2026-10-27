@@ -22,7 +22,9 @@ export const CodeBlockUnitSpecExtension =
   InlineSpecExtension<AffineTextAttributes>({
     name: 'code-block-unit',
     schema: z.object({
-      'code-block-uint': z.undefined(),
+      // zod 4 rejects a missing key unless its schema is optional, and this
+      // marker is absent from every real delta.
+      'code-block-uint': z.undefined().optional(),
     }),
     match: () => true,
     renderer: ({ delta }) => {

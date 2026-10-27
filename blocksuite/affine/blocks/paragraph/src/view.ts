@@ -2,7 +2,7 @@ import {
   type ViewExtensionContext,
   ViewExtensionProvider,
 } from '@blocksuite/affine-ext-loader';
-import { ParagraphBlockModel } from '@blocksuite/affine-model';
+import type { ParagraphBlockModel } from '@blocksuite/affine-model';
 import { BlockViewExtension, FlavourExtension } from '@blocksuite/std';
 import { literal } from 'lit/static-html.js';
 import { z } from 'zod';
@@ -28,7 +28,9 @@ const placeholders = {
 
 const optionsSchema = z.object({
   getPlaceholder: z.optional(
-    z.function().args(z.instanceof(ParagraphBlockModel)).returns(z.string())
+    z.custom<(model: ParagraphBlockModel) => string>(
+      value => typeof value === 'function'
+    )
   ),
 });
 

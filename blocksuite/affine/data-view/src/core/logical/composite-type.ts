@@ -75,7 +75,11 @@ export class FnTypeInstance<
   }
 }
 
-const fnSchema = Zod.function();
+// zod 4's `z.function()` is a function factory rather than a schema; a
+// function value is validated by being a function, as before.
+const fnSchema = Zod.custom<(...args: never[]) => unknown>(
+  value => typeof value === 'function'
+);
 
 export class ArrayTypeInstance<
   Element extends TypeInstance = TypeInstance,

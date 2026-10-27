@@ -13,7 +13,7 @@ been published from this repository.
 `b4c8548c09da21b2898443559a5b846f0ccf5dd8`. Its Git tree SHA is
 `044535822a52dc3134ef70d994901828db35c1ac`. The fork patches in
 [`provenance/FORK_PATCHES.md`](provenance/FORK_PATCHES.md) are applied on top,
-producing the built tree `45d74766e7cb98cfaebae2145429011aae13b9f6`.
+producing the built tree `b5956570e974ab9627aa03f06e2bbca524ba2604`.
 
 Fork-owned metadata is deliberately outside that tree:
 
@@ -40,7 +40,8 @@ The complete mapping is checked into
 [`provenance/PACKAGE_NAME_MAPPING.json`](provenance/PACKAGE_NAME_MAPPING.json)
 and is verified against the discovered dependency graph on every package build.
 
-The first proposed fork version is `0.27.0-cw.1`. Name, internal dependency,
+The current fork version is `0.27.0-cw.2`. `0.27.0-cw.1` covered both the
+first import and `v0.27.4`; `cw.2` is the first build on zod 4. Name, internal dependency,
 compiled JavaScript, declaration, export, accessor and Vanilla Extract
 transformations occur only in disposable staging output.
 

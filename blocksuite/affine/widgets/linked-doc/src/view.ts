@@ -10,40 +10,38 @@ import { type LinkedMenuGroup, LinkedWidgetConfigExtension } from './config';
 import { effects } from './effects';
 import { linkedDocWidget } from './widget';
 
+// zod 4's `z.function()` is a function factory rather than a schema; the
+// options were only ever checked for being functions.
+const functionSchema = <Fn extends (...args: never[]) => unknown>() =>
+  z.custom<Fn>(value => typeof value === 'function');
+
 const optionsSchema = z.object({
   triggerKeys: z.optional(z.tuple([z.string()]).rest(z.string())),
   convertTriggerKey: z.boolean().optional(),
   ignoreBlockTypes: z.array(z.string()).optional(),
   ignoreSelector: z.string().optional(),
   getMenus: z.optional(
-    z
-      .function()
-      .args(
-        z.string(),
-        z.function().returns(z.void()),
-        z.custom<EditorHost>(),
-        z.custom<AffineInlineEditor>(),
-        z.instanceof(AbortSignal)
-      )
-      .returns(
-        z.union([
-          z.promise(z.array(z.custom<LinkedMenuGroup>())),
-          z.array(z.custom<LinkedMenuGroup>()),
-        ])
-      )
+    functionSchema<
+      (
+        query: string,
+        abort: () => void,
+        editorHost: EditorHost,
+        inlineEditor: AffineInlineEditor,
+        abortSignal: AbortSignal
+      ) => Promise<LinkedMenuGroup[]> | LinkedMenuGroup[]
+    >()
   ),
 
   autoFocusedItemKey: z.optional(
-    z
-      .function()
-      .args(
-        z.array(z.custom<LinkedMenuGroup>()),
-        z.string(),
-        z.string().nullable(),
-        z.custom<EditorHost>(),
-        z.custom<AffineInlineEditor>()
-      )
-      .returns(z.string().nullable())
+    functionSchema<
+      (
+        menus: LinkedMenuGroup[],
+        query: string,
+        currentActiveKey: string | null,
+        editorHost: EditorHost,
+        inlineEditor: AffineInlineEditor
+      ) => string | null
+    >()
   ),
 
   mobile: z
@@ -52,7 +50,7 @@ const optionsSchema = z.object({
         z.union([z.string(), z.instanceof(HTMLElement), z.custom<Window>()])
       ),
       scrollTopOffset: z.optional(
-        z.union([z.number(), z.function().returns(z.number())])
+        z.union([z.number(), functionSchema<() => number>()])
       ),
     })
     .optional(),

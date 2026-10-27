@@ -34,7 +34,6 @@ import {
   ZodIntersection,
   ZodObject,
   type ZodTypeAny,
-  ZodUnion,
 } from 'zod';
 
 const ConnectorEndpointSchema = z.nativeEnum(PointStyle);
@@ -195,7 +194,7 @@ export type NodeProps = z.infer<typeof NodePropsSchema>;
 
 export function makeDeepOptional(schema: ZodTypeAny): ZodTypeAny {
   if (schema instanceof ZodDefault) {
-    return makeDeepOptional(schema._def.innerType);
+    return makeDeepOptional(schema.unwrap() as ZodTypeAny);
   }
   if (schema instanceof ZodObject) {
     const shape = schema.shape;
@@ -205,14 +204,15 @@ export function makeDeepOptional(schema: ZodTypeAny): ZodTypeAny {
       })
     );
     return z.object(deepOptionalShape).optional();
-  } else if (schema instanceof ZodUnion) {
-    return schema.or(z.undefined());
   } else if (schema instanceof ZodIntersection) {
     return z.intersection(
-      makeDeepOptional(schema._def.left),
-      makeDeepOptional(schema._def.right)
+      makeDeepOptional(schema.def.left as ZodTypeAny),
+      makeDeepOptional(schema.def.right as ZodTypeAny)
     );
   } else {
+    // Unions used to get `.or(z.undefined())` here. zod 4 still accepts an
+    // explicit `undefined` for that, but no longer a missing key, which every
+    // partial update has; `.optional()` accepts both, as zod 3 did.
     return schema.optional();
   }
 }

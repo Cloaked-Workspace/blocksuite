@@ -31,7 +31,9 @@ export const LatexEditorUnitSpecExtension =
   InlineSpecExtension<AffineTextAttributes>({
     name: 'latex-editor-unit',
     schema: z.object({
-      'latex-editor-unit': z.undefined(),
+      // zod 4 rejects a missing key unless its schema is optional, and this
+      // marker is absent from every real delta.
+      'latex-editor-unit': z.undefined().optional(),
     }),
     match: () => true,
     renderer: ({ delta }) => {

@@ -14,7 +14,10 @@ import { makeDeepOptional, NodePropsSchema } from '../utils/index.js';
 import { EditorSettingProvider } from './editor-setting-service.js';
 
 const LastPropsSchema = NodePropsSchema;
-const OptionalPropsSchema = makeDeepOptional(NodePropsSchema);
+// `makeDeepOptional` builds its schema at runtime, so zod cannot type it.
+const OptionalPropsSchema = makeDeepOptional(NodePropsSchema) as z.ZodOptional<
+  z.ZodObject<Record<string, z.ZodType<Record<string, unknown>>>>
+>;
 export type LastProps = z.infer<typeof NodePropsSchema>;
 export type LastPropsKey = keyof LastProps;
 
@@ -182,7 +185,7 @@ export class EditPropsStore extends LifeCycleWatcher {
   }
 
   recordLastProps(key: LastPropsKey, props: Partial<LastProps[LastPropsKey]>) {
-    const schema = OptionalPropsSchema._def.innerType.shape[key];
+    const schema = OptionalPropsSchema.unwrap().shape[key];
     if (!schema) return;
 
     const overrideProps = schema.parse(props);
@@ -194,7 +197,9 @@ export class EditPropsStore extends LifeCycleWatcher {
       { [key]: overrideProps },
       customizer
     );
-    this.innerProps$.value = OptionalPropsSchema.parse(nextProps);
+    this.innerProps$.value = OptionalPropsSchema.parse(
+      nextProps
+    ) as DeepPartial<LastProps>;
   }
 
   setStorage<T extends StoragePropsKey>(key: T, value: StorageProps[T]) {
