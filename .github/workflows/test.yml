@@ -14,10 +14,14 @@ concurrency:
 permissions:
   contents: read
 
+# Pinned rather than ubuntu-latest: when ubuntu-latest moved to 26.04,
+# Playwright 1.58 refused to install Chromium there, and the package proof
+# failed with EXDEV because /tmp became a separate mount from the workspace.
+# Move the pin deliberately, together with whatever those two need.
 jobs:
   build-and-test:
     name: Build and Node unit tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -31,7 +35,7 @@ jobs:
 
   browser-unit-tests:
     name: Chromium unit tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -43,7 +47,7 @@ jobs:
 
   package-proof:
     name: Local package proof
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
