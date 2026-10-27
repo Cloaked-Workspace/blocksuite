@@ -103,8 +103,8 @@ The current digest is
 SHA-256 `32dfa7b982b60d3ea3eefdddb70f86c845fdea44ef20373bd0073b3e327493e7`, for
 `0.27.0-cw.2`: the zod 4.6 move plus the version, which is written into every
 package and so changes every tarball. Two consecutive builds on macOS, Node
-22.23.1 and npm 10.9.8, inside the pin, produced it identically (2026-10-26);
-cross-platform agreement comes from the next CI run.
+22.23.1 and npm 10.9.8, inside the pin, produced it identically (2026-10-26),
+and Linux CI on #7 printed the same value.
 
 Every transformation count is unchanged from the table below, and the 70 tarballs
 total 5.3 MB. The name mapping is unchanged.
