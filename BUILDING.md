@@ -89,6 +89,34 @@ produces them.
 
 No package script is executed by `npm pack`, and this command does not publish.
 
+### Bill of materials
+
+`build:packages` writes `sbom.cdx.json` beside the tarballs: a CycloneDX 1.6
+document generated from the staged tree rather than from a manifest that could
+have been edited afterwards. `inventory.json` records its SHA-256 as
+`sbomSha256`.
+
+It carries 140 components. The 70 owned packages have concrete versions, SHA-256
+hashes of their archives, licences, their upstream names, and their published
+content digests. Their external requirements appear as components without a
+version, because nothing is installed at this point — what a range resolves to is
+a property of the consumer's lockfile, not of this distribution, and inventing a
+resolved version would be worse than declaring none. Each carries its declared
+range in `cw:declaredRange`.
+
+The document is deterministic: no timestamp is emitted, and the serial number is
+derived from `inventoryContentSha256` rather than randomised, so two builds of
+the same content produce byte-identical documents. A random serial number would
+quietly destroy that property, which is the same one the tarballs have.
+
+Reading it answers questions the manifests scatter. `yjs`, for instance, shows
+as `* || ^13.6.27` — the single peer declaration and the twenty-one regular ones
+side by side.
+
+This closes the SBOM half of the provenance gate. Signature verification and npm
+provenance attestations depend on publication being configured, and are not
+here.
+
 ### Consumer proof
 
 ```sh
