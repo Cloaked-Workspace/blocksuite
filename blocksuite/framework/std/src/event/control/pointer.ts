@@ -109,6 +109,28 @@ class PointerEventForward extends PointerControllerBase {
   }
 }
 
+// Touch and pen taps are imprecise in ways a mouse click is not. Every contact
+// receives a new pointerId; a Pencil tap typically travels 2-5px between down
+// and up; and the two taps of a finger double tap often land 15-30px apart
+// (measured on an iPad Pro with Apple Pencil Pro). Mouse input keeps the exact
+// pointer and 2px slop. A contact moving more than 2px still starts a drag as
+// before; it is additionally reported as a click when it stays within
+// CONTACT_MOVE_SLOP, so a slightly moving tap is not lost.
+const CONTACT_MOVE_SLOP = 10;
+const CONTACT_REPEAT_SLOP: Record<string, number> = { pen: 16, touch: 32 };
+const isContact = (event: PointerEvent) =>
+  event.pointerType === 'touch' || event.pointerType === 'pen';
+const isSamePointer = (a: PointerEvent, b: PointerEvent) =>
+  isContact(a) ? a.pointerType === b.pointerType : a.pointerId === b.pointerId;
+const distance = (a: PointerEvent, b: PointerEvent) =>
+  Math.hypot(a.x - b.x, a.y - b.y);
+const isRepeatTooFar = (a: PointerEvent, b: PointerEvent) =>
+  isContact(a)
+    ? distance(a, b) > CONTACT_REPEAT_SLOP[a.pointerType]
+    : isFarEnough(a, b);
+const isTapTooFar = (a: PointerEvent, b: PointerEvent) =>
+  isContact(a) ? distance(a, b) > CONTACT_MOVE_SLOP : isFarEnough(a, b);
+
 class ClickController extends PointerControllerBase {
   private readonly _down = (event: PointerEvent) => {
     // disable for secondary pointer
@@ -116,9 +138,9 @@ class ClickController extends PointerControllerBase {
 
     if (
       this._downPointerState &&
-      event.pointerId === this._downPointerState.raw.pointerId &&
+      isSamePointer(event, this._downPointerState.raw) &&
       event.timeStamp - this._downPointerState.raw.timeStamp < 500 &&
-      !isFarEnough(event, this._downPointerState.raw)
+      !isRepeatTooFar(event, this._downPointerState.raw)
     ) {
       this._pointerDownCount++;
     } else {
@@ -141,7 +163,7 @@ class ClickController extends PointerControllerBase {
   private readonly _up = (event: PointerEvent) => {
     if (!this._downPointerState) return;
 
-    if (isFarEnough(this._downPointerState.raw, event)) {
+    if (isTapTooFar(event, this._downPointerState.raw)) {
       this._pointerDownCount = 0;
       this._downPointerState = null;
       return;

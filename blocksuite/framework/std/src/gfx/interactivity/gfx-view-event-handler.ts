@@ -26,7 +26,17 @@ export class GfxViewEventManager {
     if (eventName === 'pointermove') {
       this._handlePointerMove(evt);
       return false;
-    } else if (eventName.startsWith('drag')) {
+    }
+
+    // Touch and pen contacts can start without any preceding hover, so the
+    // stack may be empty or describe an earlier position. Hit-test at the
+    // contact itself so its click, double-click and drag reach the element
+    // under it. Mouse input keeps relying on the hover stack.
+    if (eventName === 'pointerdown' && evt.raw.pointerType !== 'mouse') {
+      this._handlePointerMove(evt, false);
+    }
+
+    if (eventName.startsWith('drag')) {
       return this._handleDrag(
         eventName as 'dragstart' | 'dragend' | 'dragmove',
         evt
@@ -60,7 +70,10 @@ export class GfxViewEventManager {
     }
   }
 
-  private _handlePointerMove(_evt: PointerEventState): void {
+  private _handlePointerMove(
+    _evt: PointerEventState,
+    dispatchMove = true
+  ): void {
     const [x, y] = this.gfx.viewport.toModelCoord(_evt.x, _evt.y);
     const hoveredElmViews = this.gfx.grid
       .search(new Bound(x - 5, y - 5, 10, 10), {
@@ -95,7 +108,7 @@ export class GfxViewEventManager {
     this._callInReverseOrder(view => {
       if (currentStackedViews.has(view)) {
         visited.add(view);
-        view.dispatch('pointermove', _evt);
+        if (dispatchMove) view.dispatch('pointermove', _evt);
       } else {
         view.dispatch('pointerenter', _evt);
       }

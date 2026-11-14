@@ -5,7 +5,10 @@ import {
 } from '@blocksuite/std/gfx';
 
 import { normalizeShapeBound } from './element-renderer';
-import { mountShapeTextEditor } from './text/edgeless-shape-text-editor';
+import {
+  mountShapeTextEditor,
+  trackPressKind,
+} from './text/edgeless-shape-text-editor';
 
 export class ShapeElementView extends GfxElementModelView<ShapeElementModel> {
   static override type: string = 'shape';
@@ -13,6 +16,7 @@ export class ShapeElementView extends GfxElementModelView<ShapeElementModel> {
   override onCreated(): void {
     super.onCreated();
 
+    trackPressKind(this.std.host);
     this._initDblClickToEdit();
   }
 

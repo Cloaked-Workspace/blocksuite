@@ -25,6 +25,27 @@ import { property, query } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import * as Y from 'yjs';
 
+// Kind of pointer behind the most recent press on each editor host. Mind map
+// nodes end editing on Enter and reserve Shift+Enter for a line break, which a
+// tablet's on-screen keyboard cannot type. After a touch or pen press, Enter
+// therefore inserts the line break; Escape, Tab or a tap elsewhere ends editing.
+const lastPressKind = new WeakMap<HTMLElement, string>();
+
+export function trackPressKind(host: HTMLElement) {
+  if (lastPressKind.has(host)) return;
+  lastPressKind.set(host, 'mouse');
+  host.addEventListener(
+    'pointerdown',
+    event => lastPressKind.set(host, event.pointerType),
+    { capture: true, passive: true }
+  );
+}
+
+const pressedByContact = (host: HTMLElement) => {
+  const kind = lastPressKind.get(host);
+  return kind === 'touch' || kind === 'pen';
+};
+
 function isShapeElement(element: unknown): element is ShapeElementModel {
   return (
     !!element &&
@@ -121,7 +142,12 @@ export class EdgelessShapeTextEditor extends WithDisposable(ShadowlessElement) {
       switch (evt.key) {
         case 'Enter': {
           evt.stopPropagation();
-          if (evt.shiftKey || evt.isComposing) return;
+          if (
+            evt.shiftKey ||
+            evt.isComposing ||
+            pressedByContact(this.std.host)
+          )
+            return;
 
           (this.ownerDocument.activeElement as HTMLElement).blur();
           selection.set({

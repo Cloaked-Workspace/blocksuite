@@ -55,7 +55,36 @@ export class EdgelessShapeMenu extends SignalWatcher(
       height: 24px;
       margin: 0 9px;
     }
+    /* Touch screens have no hover, so tooltips never appear and the light
+       active background is easy to miss. Name each shape and frame the
+       chosen one instead. */
+    .shape-choice {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 2px 4px;
+      border: 2px solid transparent;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .shape-choice[data-active] {
+      border-color: var(--affine-brand-color);
+    }
+    .shape-label {
+      font-size: 11px;
+      line-height: 13px;
+      white-space: nowrap;
+      color: var(--affine-text-secondary-color);
+    }
+    .shape-choice[data-active] .shape-label {
+      color: var(--affine-brand-color);
+      font-weight: 600;
+    }
   `;
+
+  private readonly _touch =
+    typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
 
   private readonly _shapeName$: Signal<ShapeName> = signal(ShapeType.Rect);
 
@@ -134,7 +163,7 @@ export class EdgelessShapeMenu extends SignalWatcher(
     const { fillColor, shapeStyle, shapeName } = this._props$.value;
 
     return html`
-      <edgeless-slide-menu>
+      <edgeless-slide-menu .height=${this._touch ? '64px' : '40px'}>
         <div class="menu-content">
           ${
             // TODO(@fundon): add a flag
@@ -172,19 +201,31 @@ export class EdgelessShapeMenu extends SignalWatcher(
           <div class="shape-type-container">
             ${ShapeComponentConfig.map(
               ({ name, generalIcon, scribbledIcon, tooltip }) => {
-                return html`
+                const button = html`
                   <edgeless-tool-icon-button
                     .tooltip=${tooltip}
+                    .showTooltip=${!this._touch}
                     .active=${shapeName === name}
                     .activeMode=${'background'}
-                    .iconSize=${'20px'}
-                    @click=${() => this.onChange(name)}
+                    .iconSize=${this._touch ? '24px' : '20px'}
+                    @click=${this._touch
+                      ? undefined
+                      : () => this.onChange(name)}
                   >
                     ${shapeStyle === ShapeStyle.General
                       ? generalIcon
                       : scribbledIcon}
                   </edgeless-tool-icon-button>
                 `;
+                return this._touch
+                  ? html`<div
+                      class="shape-choice"
+                      ?data-active=${shapeName === name}
+                      @click=${() => this.onChange(name)}
+                    >
+                      ${button}<span class="shape-label">${tooltip}</span>
+                    </div>`
+                  : button;
               }
             )}
           </div>
