@@ -145,10 +145,11 @@ before anything else.
 The iPad touch and render patches (`66ed6f61`, `d1c35de4`) moved the digest a
 fourth time, again through source, to
 `ec7805d1194f32120a7c4d7b471ac341e102be7b55a879be1775c0cabdb03591`. The mapped
-export count stays at 439. So far one incremental macOS build has produced it,
-on the pinned Node 22.23.1 with npm 10.9.8 (`nodePinHonored: true`). The table
-above describes `4b7a0f7f…` and says nothing about the new value until CI and a
-forced rebuild reproduce it; the consumer run below predates it as well.
+export count stays at 439. Two builds have produced it, both on the pinned Node
+22.23.1 with npm 10.9.8: an incremental macOS build, and CI on Linux (the
+`ubuntu-26.04` runner image, PR #8). The table above describes `4b7a0f7f…`; a
+forced rebuild has not yet reproduced the new value, and the consumer run below
+predates it as well.
 
 An earlier claim in this record, that a comparison build resolving npm 11 from
 `PATH` produced different gzip bytes, does not reproduce against npm 11.12.1.
