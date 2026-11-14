@@ -44,15 +44,17 @@ The exact import commit has `blocksuite` tree SHA
 `d0e6e70bfa88943c79dd5608ff3556e9aafb1783`, matching AFFiNE commit
 `00576e1e7842fb63095cdc5d7a236321957b550c`.
 
-The imported tree is no longer what gets built. Nine files carry fork patches,
-recorded in `provenance/FORK_PATCHES.md`, producing built tree
-`00e032a0b60085f0db8ea30d5d8e4bbb70fc251c`. Three bound the polynomial regular
+The imported tree is no longer what gets built. Eighteen files carry fork
+patches, recorded in `provenance/FORK_PATCHES.md`, producing built tree
+`b699c53e343224f4c71a9dbf10884e85fc7b477d`. Three bound the polynomial regular
 expressions CodeQL reported; four align the console whitelists that made the
 imported vitest configurations fail on CI; two remove the React icon re-export
-that made `react` a hard requirement for every consumer.
+that made `react` a hard requirement for every consumer; nine make the
+whiteboard usable with touch and Apple Pencil on iPad Safari, two of them new
+unit tests.
 
 Mechanical review is therefore two steps rather than one: verify `d0e6e70b…`
-against upstream, then review those four commits. `scripts/build-cw-packages.mjs`
+against upstream, then review those six commits. `scripts/build-cw-packages.mjs`
 refuses to build any other tree, and `inventory.json` records both SHAs.
 
 ## Package transformation proof
