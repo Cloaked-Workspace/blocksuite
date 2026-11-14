@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="sv">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>CW · iPad-test</title>
+  </head>
+  <body>
+    <header>
+      <strong>CW <span>iPad-test</span></strong>
+      <nav aria-label="Editorläge">
+        <button id="page-mode" aria-pressed="false">Dokument</button>
+        <button id="canvas-mode" aria-pressed="true">Whiteboard</button>
+      </nav>
+      <nav aria-label="Dokumenthistorik">
+        <button id="undo" aria-label="Ångra i dokumentet" title="Ångra senaste egna ändringen i dokumentet" disabled>↶ Ångra</button>
+        <button id="redo" aria-label="Gör om i dokumentet" title="Gör om en ångrad ändring i dokumentet" disabled>↷ Gör om</button>
+      </nav>
+      <nav aria-label="Skrivsätt">
+        <button id="handwriting-toggle" aria-pressed="false" aria-expanded="false" disabled>Skriv med penna</button>
+        <button id="keyboard-toggle" aria-pressed="false" aria-expanded="false" disabled>Tangentbord</button>
+      </nav>
+      <span id="sync-status" role="status">Ansluter…</span>
+      <button id="diagnostics-toggle" aria-expanded="false">Testpanel</button>
+    </header>
+    <main id="editor" class="affine-page-viewport" aria-label="Testdokument"></main>
+    <p id="canvas-feedback" role="status" hidden></p>
+    <aside id="canvas-tools-panel" role="dialog" aria-labelledby="canvas-tools-heading" hidden>
+      <div class="panel-heading"><h1 id="canvas-tools-heading" tabindex="-1"></h1><button id="canvas-tools-close" aria-label="Stäng verktygsmenyn">Stäng</button></div>
+      <p id="canvas-tools-help">Tryck på ett val för att lägga till mitt i vyn. Flytta sedan objektet dit du vill.</p>
+      <div id="canvas-tools-options" class="canvas-options"></div>
+    </aside>
+    <aside id="handwriting-panel" aria-label="Handskrift till text" hidden>
+      <h1 id="writing-heading">Handskrift till text</h1>
+      <p id="writing-instructions">Skriv med Apple Pencil i fältet nedan. Du kan växla till tangentbord utan att förlora texten.</p>
+      <label>Text att lägga till
+        <textarea id="handwriting-input" lang="sv" inputmode="text" rows="5" spellcheck="true" placeholder="Skriv här…"></textarea>
+      </label>
+      <div class="actions draft-history" aria-label="Skrivfältets historik">
+        <button id="draft-undo" disabled>Ångra text i fältet</button>
+        <button id="draft-redo" disabled>Gör om text i fältet</button>
+      </div>
+      <label for="handwriting-target">Textblock</label>
+      <select id="handwriting-target"></select>
+      <div class="actions">
+        <button id="handwriting-insert" disabled>Lägg till i textblocket</button>
+        <button id="handwriting-close">Stäng</button>
+      </div>
+      <p id="handwriting-status" role="status">Texten läggs till sist i valt block när du trycker på knappen.</p>
+      <p class="small">Ångra/Gör om i överkanten gäller ändringar i dokumentet. Knapparna ovan gäller texten som ännu inte lagts till.</p>
+      <p class="small">På iPad: tryck Tangentbord med fingret. Om iPadOS visar den lilla handskriftsraden kan du välja tangentbord där. Handskrift/Scribble aktiveras under Inställningar → Apple Pencil.</p>
+    </aside>
+    <aside id="diagnostics" hidden>
+      <h1>Testpanel</h1>
+      <p>Testdata sparas på denna Mac. Skärmbild delas separat via kabel.</p>
+      <label>Enhet <input id="device-name" maxlength="60" placeholder="t.ex. iPad Pro M4 + Pencil Pro" /></label>
+      <label>iPadOS-version <input id="os-version" maxlength="40" placeholder="Ange från Inställningar → Allmänt → Om" /></label>
+      <label>Scenario <select id="scenario">
+        <option>Penna: rita och variera tryck</option>
+        <option>Handflata: vila handen och rita</option>
+        <option>Touch: panorera och nypzooma</option>
+        <option>Block: markera och flytta</option>
+        <option>Text: tangentbord och markör</option>
+        <option>Synk: återanslut och ladda om</option>
+      </select></label>
+      <label>Observation <textarea id="observation" rows="3" maxlength="1200" placeholder="Vad hände? Vad förväntade du dig?"></textarea></label>
+      <div class="actions"><button id="pass">Fungerar</button><button id="fail">Problem</button></div>
+      <p id="report-status" role="status"></p>
+      <pre id="live-diagnostics"></pre>
+      <button id="download-report">Hämta diagnostik</button>
+      <a id="monitor-link" target="_blank" rel="noopener">Öppna Mac-monitor</a>
+      <p class="small">Baseline: editorns gester är oförändrade. Penntryck och touch är observationer, inte ett godkänt enhetstest.</p>
+    </aside>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

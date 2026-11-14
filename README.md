@@ -64,6 +64,15 @@ BLOCKSUITE_ARTIFACT_DIR=/absolute/path/outside/repository yarn verify:consumer:a
 only published packages, then drives it in a browser to confirm the editor
 mounts, renders, and round-trips edits.
 
+## iPad baseline lab
+
+Run `yarn test:ipad` for a separate document/whiteboard test host reachable from
+an iPad on the local network, with Yjs document sharing and a Mac diagnostics
+monitor. Run `yarn verify:ipad` for the automated checks. See
+[the device testing guide](scripts/ipad-lab/README.md) for connection, Pencil,
+screen capture and HTTP/HTTPS limitations. This is test infrastructure; physical
+iPad and Pencil results must be recorded separately.
+
 ## Publication policy
 
 Publication and release automation are intentionally absent. Any future npm
