@@ -111,10 +111,16 @@ function renderText(
     fontWeight
   );
   const metrics = getFontMetrics(fontFamily, fontSize, fontWeight);
+  // Auto-sized shapes are exactly as wide as their text measured on the device
+  // that last edited them. Another engine can measure the same line a fraction
+  // wider (Safari on iPad against Chromium on Mac), which would wrap it and
+  // overflow the stored height. Let a line borrow half the horizontal padding
+  // before wrapping.
+  const wrapWidth = w - horPadding * 2 + horPadding / 2;
   const lines =
     typeof text === 'string'
       ? [text.split('\n').map(line => ({ insert: line }))]
-      : deltaInsertsToChunks(wrapTextDeltas(text, font, w - horPadding * 2));
+      : deltaInsertsToChunks(wrapTextDeltas(text, font, wrapWidth));
   const horOffset = horizontalOffset(model.w, model.textAlign, horPadding);
   const vertOffset =
     verticalOffset(
