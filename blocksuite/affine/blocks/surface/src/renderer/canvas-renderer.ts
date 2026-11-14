@@ -863,6 +863,13 @@ export class CanvasRenderer {
         this._updatePlaceholderMode();
       })
     );
+    // A pan also enters and leaves the low-zoom stacking-canvas bypass. Without
+    // this, the canvases detached during an iOS pan stay detached once it ends.
+    this._disposables.add(
+      this.viewport.panning$.subscribe(() => {
+        this._updatePlaceholderMode();
+      })
+    );
 
     // When SKIP_REFRESH_DURING_GESTURE is enabled, defer heavy canvas work
     // while the gesture is still in-flight, but start the first recovery frame
@@ -979,15 +986,24 @@ export class CanvasRenderer {
     const matrix = new DOMMatrix().scaleSelf(scale);
     const renderStats = this._createRenderPassStats();
     const fullRender = this._needsFullRender;
-    const bypassStackingCanvases = getStackingCanvasBypassState({
-      isIOS: IS_IOS,
-      zoom: this.viewport.zoom,
-      gestureActive:
-        this.viewport.panning$.value || this.viewport.zooming$.value,
-      recoveryActive: this._isStackingCanvasRecoveryActive(),
-      viewportWidth: this.viewport.width,
-      viewportHeight: this.viewport.height,
-    });
+    // Detached stacking canvases are invisible, so their layers must be drawn
+    // on the main canvas whatever the gesture state says at this moment.
+    const bypassStackingCanvases =
+      !this._stackingCanvasesAttached ||
+      getStackingCanvasBypassState({
+        isIOS: IS_IOS,
+        zoom: this.viewport.zoom,
+        gestureActive:
+          this.viewport.panning$.value || this.viewport.zooming$.value,
+        recoveryActive: this._isStackingCanvasRecoveryActive(),
+        viewportWidth: this.viewport.width,
+        viewportHeight: this.viewport.height,
+      });
+    // While bypassed, a change to an element in a stacking layer shows on the
+    // main canvas, so redraw it instead of the skipped layer canvas.
+    if (bypassStackingCanvases && this._dirtyStackingCanvasIndexes.size) {
+      this._mainCanvasDirty = true;
+    }
     const stackingIndexesToRender = bypassStackingCanvases
       ? []
       : fullRender
@@ -1002,7 +1018,14 @@ export class CanvasRenderer {
     const allCanvasLayers = this.layerManager.getCanvasLayers();
     const stackingViewportBound = Bound.from(overscanViewportBounds);
 
+    // Resizing a canvas clears its bitmap. A partial render can still resize
+    // the main canvas, for example when a fractional viewport height (iPad
+    // Safari) rounds to a different pixel height, so redraw it in that case.
+    const { width: mainWidth, height: mainHeight } = this.canvas;
     this._canvasSizeUpdater(mainCanvasRenderBound, dpr).update(this.canvas);
+    if (this.canvas.width !== mainWidth || this.canvas.height !== mainHeight) {
+      this._mainCanvasDirty = true;
+    }
 
     if (bypassStackingCanvases) {
       this._stackingCanvas.forEach(canvas => {

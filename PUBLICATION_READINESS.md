@@ -44,15 +44,17 @@ The exact import commit has `blocksuite` tree SHA
 `d0e6e70bfa88943c79dd5608ff3556e9aafb1783`, matching AFFiNE commit
 `00576e1e7842fb63095cdc5d7a236321957b550c`.
 
-The imported tree is no longer what gets built. Nine files carry fork patches,
-recorded in `provenance/FORK_PATCHES.md`, producing built tree
-`00e032a0b60085f0db8ea30d5d8e4bbb70fc251c`. Three bound the polynomial regular
+The imported tree is no longer what gets built. Eighteen files carry fork
+patches, recorded in `provenance/FORK_PATCHES.md`, producing built tree
+`b699c53e343224f4c71a9dbf10884e85fc7b477d`. Three bound the polynomial regular
 expressions CodeQL reported; four align the console whitelists that made the
 imported vitest configurations fail on CI; two remove the React icon re-export
-that made `react` a hard requirement for every consumer.
+that made `react` a hard requirement for every consumer; nine make the
+whiteboard usable with touch and Apple Pencil on iPad Safari, two of them new
+unit tests.
 
 Mechanical review is therefore two steps rather than one: verify `d0e6e70b…`
-against upstream, then review those four commits. `scripts/build-cw-packages.mjs`
+against upstream, then review those six commits. `scripts/build-cw-packages.mjs`
 refuses to build any other tree, and `inventory.json` records both SHAs.
 
 ## Package transformation proof
@@ -139,6 +141,15 @@ against a stale pin and built successfully, because both were consistently old.
 Nothing detected the staleness except the printed export count and digest.
 A reviewer comparing a build against this record should check those two lines
 before anything else.
+
+The iPad touch and render patches (`66ed6f61`, `d1c35de4`) moved the digest a
+fourth time, again through source, to
+`ec7805d1194f32120a7c4d7b471ac341e102be7b55a879be1775c0cabdb03591`. The mapped
+export count stays at 439. Two builds have produced it, both on the pinned Node
+22.23.1 with npm 10.9.8: an incremental macOS build, and CI on Linux (the
+`ubuntu-26.04` runner image, PR #8). The table above describes `4b7a0f7f…`; a
+forced rebuild has not yet reproduced the new value, and the consumer run below
+predates it as well.
 
 An earlier claim in this record, that a comparison build resolving npm 11 from
 `PATH` produced different gzip bytes, does not reproduce against npm 11.12.1.

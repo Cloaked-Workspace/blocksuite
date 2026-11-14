@@ -15,6 +15,8 @@
     "build:packages": "node scripts/build-cw-packages.mjs",
     "verify:consumer": "node scripts/verify-consumer.mjs",
     "verify:consumer:app": "node scripts/verify-consumer-app.mjs",
+    "test:ipad": "node scripts/ipad-lab/server.mjs",
+    "verify:ipad": "node scripts/ipad-lab/verify.mjs",
     "test:unit": "node scripts/run-unit-tests.mjs",
     "test:unit:browser": "node scripts/run-unit-tests.mjs --browser"
   },

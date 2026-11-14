@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.web.json",
+  "compilerOptions": {
+    "composite": false,
+    "noEmit": true,
+    "disableSourceOfProjectReferenceRedirect": true
+  },
+  "include": ["main.ts", "monitor.ts"],
+  "references": [{ "path": "../../blocksuite/affine/all" }]
+}

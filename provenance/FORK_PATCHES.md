@@ -4,10 +4,10 @@ The `blocksuite/` tree was imported unchanged from AFFiNE commit
 `00576e1e7842fb63095cdc5d7a236321957b550c`, subtree SHA
 `d0e6e70bfa88943c79dd5608ff3556e9aafb1783`. The patches below are applied on
 top of that import, so the built tree is
-`00e032a0b60085f0db8ea30d5d8e4bbb70fc251c`.
+`b699c53e343224f4c71a9dbf10884e85fc7b477d`.
 
 Reviewing the import mechanically therefore takes two steps rather than one:
-verify `d0e6e70b…` against upstream, then review the four commits listed here.
+verify `d0e6e70b…` against upstream, then review the six commits listed here.
 Nothing else in `blocksuite/` deviates.
 
 `scripts/build-cw-packages.mjs` refuses to build unless the tree matches the
@@ -75,9 +75,40 @@ survives and only a consumer that asks for it pulls React.
 `yarn verify:consumer:app` covers the result: the proof application declares no
 React and mounts an editor.
 
+## `66ed6f6128bdac68cc07341f490feba1335849d6` — make whiteboard taps work with touch and Apple Pencil
+
+Found with the iPad lab (`scripts/ipad-lab/`) on an iPad Pro 11-inch M4 with
+Apple Pencil Pro. Mouse input behaves exactly as before.
+
+| File | Change |
+|---|---|
+| `framework/std/src/event/control/pointer.ts` | group touch and pen contacts into double taps by kind, within 16px (pen) or 32px (touch) instead of by `pointerId` and 2px; a contact that travels up to 10px still counts as a click |
+| `framework/std/src/gfx/interactivity/gfx-view-event-handler.ts` | hit-test at a touch or pen `pointerdown`, since the hover stack only follows `pointermove` |
+| `affine/gfx/shape/src/text/edgeless-shape-text-editor.ts` | after a touch or pen press, Enter inserts a line break in a mind map node |
+| `affine/gfx/shape/src/element-view.ts` | start recording the last press kind per editor host |
+| `affine/gfx/shape/src/draggable/shape-menu.ts` | on coarse pointers, name each shape and frame the chosen one |
+| `framework/std/src/__tests__/pointer-click.unit.spec.ts` | new: double-tap grouping for touch, pen and mouse |
+| `framework/std/src/__tests__/gfx/view-event.unit.spec.ts` | new: touch and pen taps reach the element without hover |
+
+Tap distances come from the lab's device reports: Pencil taps travel a median
+2.2px between down and up, and finger double taps land up to 26px apart.
+
+## `d1c35de405dc4f1bb23854ceab4e4bdc569f46f6` — stop iPad Safari losing whiteboard content
+
+| File | Change |
+|---|---|
+| `affine/blocks/surface/src/renderer/canvas-renderer.ts` | re-attach stacking canvases when a pan ends; draw every layer on the main canvas while they are detached; redraw the main canvas whenever a render resizes it |
+| `affine/gfx/shape/src/element-renderer/shape/index.ts` | let a shape's text line borrow half the horizontal padding before wrapping |
+
+On iOS below 50% zoom a pan detaches the stacking canvases, and only the end
+of a zoom re-attached them; the next render, typically a selection, then left
+everything invisible. Reproduced in Chromium with iPad Safari's user agent,
+`navigator.vendor` and touch points. Text wrapping differs because Safari
+measures a line slightly wider than the Chromium that sized the shape.
+
 ## Upstream status
 
-Both patches are candidates to propose upstream, which would remove the need to
-carry them. Nothing has been submitted. AFFiNE's `SECURITY.md` declines
+All six patches are candidates to propose upstream, which would remove the need
+to carry them. Nothing has been submitted. AFFiNE's `SECURITY.md` declines
 AI-generated security reports, so any submission must be authored and verified
 by a maintainer of this fork.
